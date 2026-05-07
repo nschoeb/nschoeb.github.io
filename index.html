@@ -1,11 +1,95 @@
-<html>
- 
-<body>
-  <h1>Nathaniel Schoeb</h1>
-  <p>Software Engineer</p>
-  <a href="resume.html">Resume</a>
-  <img src="https://content.codecademy.com/articles/github-pages-via-web-app/happy-ice-cream.gif" />
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nathaniel Schoeb | Technical Lead</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #f9fafb;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        .climbing-gradient {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        }
+        .card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            transition: transform 0.2s, shadow 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="text-gray-900">
 
+    <!-- Hero Section -->
+    <header class="climbing-gradient text-white py-16 px-6 text-center">
+        <h1 class="text-4xl md:text-5xl font-bold mb-2">Hi 👋, I'm Nathaniel Schoeb</h1>
+        <p class="text-xl md:text-2xl text-slate-300 font-medium">Technical Lead & Senior Software Engineer based in Oakland, CA</p>
+        
+        <div class="mt-8 flex justify-center gap-4">
+            <a href="https://nschoeb.github.io/task-tracker/" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center gap-2">
+                <img src="https://www.vectorlogo.zone/logos/supabase/supabase-icon.svg" width="20" class="brightness-0 invert" alt="Supabase">
+                Nathaniel's Task Tracker
+            </a>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto py-12 px-6">
+        
+        <!-- Key Highlights -->
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+            <div class="card p-6 rounded-xl">
+                <div class="text-3xl mb-3">🏛️</div>
+                <h3 class="font-bold text-lg mb-1">Technical Lead</h3>
+                <p class="text-gray-600 text-sm">Architecting secure, full-stack healthcare systems at Kreative Technologies for the DoD.</p>
+            </div>
+            <div class="card p-6 rounded-xl">
+                <div class="text-3xl mb-3">🚀</div>
+                <h3 class="font-bold text-lg mb-1">Full-Stack Expert</h3>
+                <p class="text-gray-600 text-sm">Specialized in React, Node.js, and PostgreSQL with a focus on Secure SDLC and HIPAA.</p>
+            </div>
+            <div class="card p-6 rounded-xl">
+                <div class="text-3xl mb-3">📈</div>
+                <h3 class="font-bold text-lg mb-1">80% Automation</h3>
+                <p class="text-gray-600 text-sm">Proven track record of automating complex workflows and reducing manual labor significantly.</p>
+            </div>
+            <div class="card p-6 rounded-xl">
+                <div class="text-3xl mb-3">🧗</div>
+                <h3 class="font-bold text-lg mb-1">Rock Climber</h3>
+                <p class="text-gray-600 text-sm">Problem solver who enjoys scaling routes at Pacific Pipe and Great Western Power Company.</p>
+            </div>
+        </section>
+
+        <!-- Tech Stack -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold mb-6 border-b pb-2">Modern Tech Stack & Tools</h2>
+            <div class="flex flex-wrap gap-8 justify-center bg-white p-8 rounded-xl border border-gray-100 shadow-sm">
+                <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/typescript/typescript-original.svg" alt="typescript" title="TypeScript" width="50" height="50"/>
+                <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/javascript/javascript-original.svg" alt="javascript" title="JavaScript" width="50" height="50"/>
+                <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/react/react-original-wordmark.svg" alt="react" title="React" width="50" height="50"/>
+                <img src="https://www.vectorlogo.zone/logos/supabase/supabase-icon.svg" alt="supabase" title="Supabase" width="50" height="50"/>
+                <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/postgresql/postgresql-original-wordmark.svg" alt="postgresql" title="PostgreSQL" width="50" height="50"/>
+                <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/python/python-original.svg" alt="python" title="Python" width="50" height="50"/>
+                <img src="https://www.vectorlogo.zone/logos/tailwindcss/tailwindcss-icon.svg" alt="tailwind" title="Tailwind CSS" width="50" height="50"/>
+            </div>
+        </section>
+
+        <!-- Contact/Footer -->
+        <footer class="text-center pt-8 border-t">
+            <h3 class="font-bold mb-4">Let's Connect</h3>
+            <div class="flex justify-center gap-6">
+                <a href="mailto:nschoeb@gmail.com" class="hover:opacity-75 transition-opacity">
+                    <img src="https://raw.githubusercontent.com/rahuldkjain/github-profile-readme-generator/master/src/images/icons/Social/gmail.svg" alt="Email" height="35" width="45" />
+                </a>
+            </div>
+            <p class="mt-8 text-gray-400 text-xs">© 2026 Nathaniel Schoeb • Built with React & Tailwind</p>
+        </footer>
+
+    </main>
 </body>
- 
 </html>
