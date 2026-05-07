@@ -1,101 +1,138 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nathaniel Schoeb | Resume</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
         }
-
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
+        .resume-container {
+            max-width: 850px;
+            margin: 40px auto;
+            background: white;
+            padding: 50px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            border-radius: 8px;
         }
-
-        h1 {
-            text-align: center;
-        }
-
-        .section {
-            margin-bottom: 20px;
-        }
-
-        .section h2 {
-            margin-bottom: 10px;
-        }
-
-        .section p {
-            margin: 0;
-        }
-
-        @media screen and (max-width: 600px) {
-            .container {
-                padding: 10px;
+        @media (max-width: 640px) {
+            .resume-container {
+                margin: 0;
+                padding: 20px;
+                border-radius: 0;
             }
+        }
+        h2 {
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 8px;
+            margin-top: 32px;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            font-size: 0.875rem;
+            letter-spacing: 0.1em;
+            color: #4b5563;
+            font-weight: 700;
+        }
+        .job-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <h1>Nathaniel Schoeb</h1>
-        <div class="section">
-            <h2>Contact Information</h2>
-            <p>Email: nschoeb@gmail.com</p>
-            <p>LinkedIn: <a href="https://linkedin.com/in/nschoeb">linkedin.com/in/nschoeb</a></p>
-        </div>
-        <div class="section">
-            <h2>Experience</h2>
-            <p>
-                <strong>Kreative Technologies</strong> - April 2022 – Present<br>
-                <em>Software Engineer I</em> (Remote)
+<body class="text-gray-800 antialiased">
+
+    <div class="resume-container">
+        <!-- Header -->
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-bold text-gray-900 tracking-tight mb-2">Nathaniel Schoeb</h1>
+            <div class="text-gray-600 flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm">
+                <span>San Francisco, CA</span>
+                <span>•</span>
+                <span>(443) 504-4023</span>
+                <span>•</span>
+                <a href="mailto:nschoeb@gmail.com" class="text-blue-600 hover:underline">nschoeb@gmail.com</a>
+            </div>
+        </header>
+
+        <!-- Summary -->
+        <section>
+            <h2>Professional Summary</h2>
+            <p class="text-gray-700 leading-relaxed">
+                <strong>Senior Software Engineer & Technical Lead</strong> with 4+ years of experience architecting secure, full-stack applications in high-stakes, regulated environments (DoD/HIPAA). Expert in <strong>React, Node.js, and PostgreSQL</strong>, with a proven record of automating compliance workflows to drive 80% efficiency gains. Specialized in leading Agile teams through the full software development life cycle (SDLC), balancing rapid feature delivery with rigorous security standards.
             </p>
-            <ul>
-                <li>Developed information management software for the Defense Health Agency (DHA) Special Needs Program for Children (SNPMIS)</li>
-                <li>Created JavaScript solutions to overcome limitations of a low-code development platform</li>
-                <li>Migrated data from an antiquated legacy schema into a proprietary OpenText Appworks schema with a backbone of .Net/C# utilizing SQL databases</li>
-                <li>Aligned government representatives and internal team members with Atlassian Jira requirements, executing through Agile Methodology to support project management and timely completion of deliverables</li>
-                <li>Contributed to documentation of the software user manual for readability and effectiveness - Provided updated screenshots of the end user experience and added descriptions of functionality</li>
-            </ul>
-            <p>
-                <strong>One Hundred Devs</strong> - March 2021 – April 2022<br>
-                <em>Software Engineering Immersive</em> (Remote)
-            </p>
-            <ul>
-                <li>Collaborated with teams of developers to design and build responsive full stack web applications using agile best practices</li>
-                <li>Built semantically structured and responsive full stack web applications for mobile and desktop devices</li>
-                <li>Projects: Regular Expression Tester, Calculator, Hair Salon, Restaurant</li>
-            </ul>
-            <p>
-                <strong>Founding Farmers</strong> - June 2014 – March 2020<br>
-                <em>Bartender/Server</em> (Flagship Location, Washington DC)
-            </p>
-            <ul>
-                <li>Maintained highly organized craft cocktail system to support a busy farm-to-table restaurant</li>
-                <li>Provided exceptional service to an international customer base</li>
-            </ul>
-        </div>
-        <div class="section">
-            <h2>Technologies</h2>
-            <p>
-                JavaScript, SQL, Python, C++, Java, HTML, CSS 3.0, ReactJS, NodeJS, Atlassian Jira, Agile Methodology, OpenText Appworks Business Process Modeling
-            </p>
-        </div>
-       <div class="section">
-            <h2>Clearance Level</h2>
-            <p>
-                 Public Trust Clearance - Department of Defense - Contractor
-            </p>
-        </div>
-      <div class="section">
+        </section>
+
+        <!-- Skills -->
+        <section>
+            <h2>Technical Skills</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-sm">
+                <p><span class="font-bold">Languages:</span> JavaScript, TypeScript, Python, SQL, Java, C++</p>
+                <p><span class="font-bold">Frontend:</span> React (Vite), Tailwind CSS, Responsive UI/UX</p>
+                <p><span class="font-bold">Backend & DB:</span> Node.js (Express), Supabase, PostgreSQL, AWS</p>
+                <p><span class="font-bold">DevOps/Security:</span> Docker, CI/CD, Secure SDLC, OWASP, HIPAA</p>
+                <p class="md:col-span-2"><span class="font-bold">Tools:</span> Git, Jira, GitHub Copilot, Cursor AI, API Integration</p>
+            </div>
+        </section>
+
+        <!-- Experience -->
+        <section>
+            <h2>Professional Experience</h2>
+            <div class="mb-6">
+                <div class="job-header">
+                    <h3 class="text-lg font-bold text-gray-900">Technical Lead / Software Engineer – SNPMIS</h3>
+                    <span class="text-sm font-semibold text-gray-500">Apr 2022 – Present</span>
+                </div>
+                <div class="flex justify-between text-sm italic text-gray-600 mb-2">
+                    <span>Kreative Technologies LLC</span>
+                    <span>Remote</span>
+                </div>
+                <ul class="list-disc ml-5 space-y-1 text-gray-700 text-sm">
+                    <li>Architected a secure, web-based system for managing critical healthcare data, ensuring 100% data integrity for special needs children of U.S. military personnel during DoD audits.</li>
+                    <li>Led a cross-functional Agile team through the design and deployment of HIPAA-compliant data repositories and encrypted tracking modules.</li>
+                    <li>Automated Congressionally-mandated compliance reporting via Python scripting, effectively reducing manual reporting cycles by 80%.</li>
+                    <li>Mentored junior developers in secure coding practices and modern React patterns to maintain high code quality and system resilience.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Projects -->
+        <section>
+            <h2>Key Projects</h2>
+            <div>
+                <div class="job-header">
+                    <h3 class="text-lg font-bold text-gray-900">Full-Stack Architect | Nathaniel's Task Tracker</h3>
+                    <span class="text-sm font-semibold text-gray-500">2025 – Present</span>
+                </div>
+                <ul class="list-disc ml-5 mt-2 space-y-1 text-gray-700 text-sm">
+                    <li>Developed a secure, multi-user workspace application using <strong>React and Supabase</strong>, featuring real-time data synchronization and PostgreSQL Row Level Security (RLS).</li>
+                    <li>Implemented custom SMTP authentication via Google and unique user data isolation to ensure a production-ready security posture for public-facing web services.</li>
+                    <li>Engineered a responsive UI with Tailwind CSS, including metadata tagging, task prioritization logic, and automated date-handling.</li>
+                    <li>Deployed and managed personal web services using <strong>Render</strong> and GitHub CI/CD pipelines for continuous integration and delivery.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Education -->
+        <section>
             <h2>Education</h2>
-            <p>
-                <strong>University of Maryland</strong> August 2004 – December 2008
-                 School of Public Health College Park, MD
-            </p>
-        </div>
-  </div>
-  </body>
+            <div class="job-header">
+                <h3 class="text-base font-bold text-gray-900">University of Maryland, College Park</h3>
+                <span class="text-sm font-semibold text-gray-500">Dec 2008</span>
+            </div>
+            <p class="text-sm italic text-gray-600">B.S. in Kinesiology, School of Public Health</p>
+        </section>
+
+        <footer class="mt-12 pt-8 border-t border-gray-100 text-center">
+             <a href="mailto:nschoeb@gmail.com" class="inline-block bg-gray-900 text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-gray-800 transition-colors">
+                Contact Me
+             </a>
+        </footer>
+    </div>
+
+</body>
 </html>
