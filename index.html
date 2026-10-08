@@ -1,99 +1,79 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nathaniel Schoeb | Technical Lead</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body {
-            background-color: #f9fafb;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        }
-        .climbing-gradient {
-            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-        }
-        .card {
-            background: white;
-            border: 1px solid #e5e7eb;
-            transition: transform 0.2s, shadow 0.2s;
-        }
-        .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101820">
+  <meta name="description" content="Nathaniel Schoeb is a senior software engineer and technical lead building secure, reliable software for complex workflows.">
+  <title>Nathaniel Schoeb — Senior Software Engineer</title>
+  <style>
+    :root { color-scheme: dark; --bg:#101820; --panel:#16232d; --text:#f2f5f7; --muted:#a8b7c2; --line:#2a3a46; --accent:#78dce8; --accent-soft:rgba(120,220,232,.12); --max:1080px; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; background:var(--bg); color:var(--text); font:16px/1.65 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; -webkit-font-smoothing:antialiased; }
+    a { color:inherit; }
+    a:focus-visible { outline:3px solid var(--accent); outline-offset:4px; border-radius:3px; }
+    .wrap { width:min(var(--max),calc(100% - 48px)); margin:0 auto; }
+    .topbar { border-bottom:1px solid var(--line); }
+    .nav { min-height:76px; display:flex; align-items:center; justify-content:space-between; gap:24px; }
+    .brand { text-decoration:none; font-size:.93rem; font-weight:750; letter-spacing:.1em; }
+    .nav-links { display:flex; gap:28px; align-items:center; }
+    .nav-links a { color:var(--muted); font-size:.9rem; text-decoration:none; }
+    .nav-links a:hover,.text-link:hover { color:var(--accent); }
+    .hero { padding:112px 0 96px; }
+    .eyebrow { color:var(--accent); font-size:.76rem; font-weight:750; letter-spacing:.18em; text-transform:uppercase; }
+    h1 { max-width:850px; margin:18px 0 20px; font-size:clamp(3rem,7vw,5.8rem); line-height:1.02; letter-spacing:-.065em; }
+    .hero p { max-width:670px; margin:0; color:var(--muted); font-size:clamp(1.08rem,2.2vw,1.32rem); }
+    .actions { display:flex; flex-wrap:wrap; gap:14px; margin-top:34px; }
+    .button { display:inline-flex; min-height:48px; align-items:center; justify-content:center; padding:0 19px; border:1px solid var(--line); border-radius:5px; text-decoration:none; font-weight:650; }
+    .button.primary { background:var(--accent); border-color:var(--accent); color:#0c1920; }
+    .button:hover { transform:translateY(-1px); }
+    .impact { display:flex; align-items:center; gap:18px; width:fit-content; margin-top:56px; padding:18px 22px; background:var(--accent-soft); border-left:2px solid var(--accent); }
+    .impact strong { color:var(--accent); font-size:2rem; line-height:1; letter-spacing:-.04em; }
+    .impact span { max-width:250px; color:var(--muted); font-size:.9rem; }
+    section { padding:82px 0; border-top:1px solid var(--line); }
+    .section-head { display:flex; align-items:baseline; justify-content:space-between; gap:20px; margin-bottom:30px; }
+    h2 { margin:0; font-size:clamp(1.7rem,4vw,2.3rem); letter-spacing:-.04em; }
+    .section-note { color:var(--muted); font-size:.9rem; }
+    .project { display:grid; grid-template-columns:1.1fr .9fr; overflow:hidden; border:1px solid var(--line); border-radius:8px; background:var(--panel); }
+    .project-copy { padding:clamp(25px,5vw,50px); }
+    .project-type { color:var(--accent); font-size:.76rem; font-weight:750; letter-spacing:.14em; text-transform:uppercase; }
+    h3 { margin:10px 0 12px; font-size:1.65rem; letter-spacing:-.035em; }
+    .project p,.about p { color:var(--muted); }
+    .project-links { display:flex; flex-wrap:wrap; gap:22px; margin-top:24px; }
+    .text-link { color:var(--accent); font-weight:650; text-decoration:none; }
+    .project-art { min-height:300px; display:grid; place-items:center; padding:30px; background:radial-gradient(ellipse at 50% 55%,#244654 0%,#192b36 42%,#14212b 100%); }
+    .keys { display:grid; grid-template-columns:repeat(4,58px); gap:9px; transform:rotate(-7deg); }
+    .key { display:grid; place-items:center; height:62px; border:1px solid #597584; border-radius:5px; background:#1b303c; color:#d6f6f8; font-size:1.05rem; font-weight:750; box-shadow:0 5px 0 #0d171d; }
+    .key:nth-child(3n) { background:var(--accent); border-color:var(--accent); color:#102027; transform:translateY(-8px); }
+    .about-grid { display:grid; grid-template-columns:1fr 1fr; gap:64px; }
+    .about p:first-child { margin-top:0; }
+    .skills-label { margin:0 0 15px; color:var(--accent); font-size:.76rem; font-weight:750; letter-spacing:.14em; text-transform:uppercase; }
+    .skills { display:flex; flex-wrap:wrap; gap:9px; }
+    .skills span { padding:7px 11px; border:1px solid var(--line); border-radius:3px; color:#d1dce2; font-size:.87rem; }
+    .experience { display:grid; grid-template-columns:1fr 2fr; gap:40px; padding:25px 0; border-top:1px solid var(--line); }
+    .experience:last-child { border-bottom:1px solid var(--line); }
+    .experience-meta { color:var(--muted); font-size:.9rem; }
+    .experience h3 { margin:0 0 7px; font-size:1.22rem; }
+    .experience p { margin:0; color:var(--muted); }
+    .contact { display:flex; align-items:center; justify-content:space-between; gap:28px; padding:42px; border:1px solid var(--line); border-radius:8px; background:var(--panel); }
+    .contact p { max-width:540px; margin-bottom:0; color:var(--muted); }
+    footer { padding:28px 0; border-top:1px solid var(--line); color:var(--muted); font-size:.84rem; }
+    .footer-inner { display:flex; justify-content:space-between; gap:20px; }
+    @media(max-width:700px) { .wrap{width:min(100% - 32px,var(--max))}.nav{min-height:68px}.nav-links{gap:14px}.nav-links a{font-size:.82rem}.hero{padding:78px 0 68px}section{padding:62px 0}.project{grid-template-columns:1fr}.project-art{min-height:230px;grid-row:1}.about-grid,.experience{grid-template-columns:1fr;gap:20px}.contact{align-items:flex-start;flex-direction:column;padding:28px}.section-head{align-items:flex-start;flex-direction:column;gap:7px} }
+    @media(max-width:420px) { .brand{font-size:.78rem}.nav-links{gap:10px}.nav-links a{font-size:.76rem}.impact{gap:12px}.keys{grid-template-columns:repeat(4,48px);gap:7px}.key{height:52px} }
+    @media(prefers-reduced-motion:reduce) { html{scroll-behavior:auto}*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important} }
+  </style>
 </head>
-<body class="text-gray-900">
-
-    <!-- Hero Section -->
-    <header class="climbing-gradient text-white py-16 px-6 text-center">
-        <h1 class="text-4xl md:text-5xl font-bold mb-2">Hi 👋, I'm Nathaniel Schoeb</h1>
-        <p class="text-xl md:text-2xl text-slate-300 font-medium">Technical Lead & Senior Software Engineer based in Oakland, CA</p>
-        
-        <div class="mt-8 flex justify-center gap-4">
-            <a href="https://nschoeb.github.io/simple-todo-app/" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center gap-2">
-                <img src="https://www.vectorlogo.zone/logos/supabase/supabase-icon.svg" width="20" class="brightness-0 invert" alt="Supabase">
-                Nathaniel's Task Tracker
-            </a>
-        </div>
-    </header>
-
-    <main class="max-w-4xl mx-auto py-12 px-6">
-        
-        <!-- Key Highlights -->
-        <section class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-            <div class="card p-6 rounded-xl">
-                <div class="text-3xl mb-3">🏛️</div>
-                <h3 class="font-bold text-lg mb-1">Technical Lead</h3>
-                <p class="text-gray-600 text-sm">Architecting secure, full-stack healthcare systems at Kreative Technologies for the DoD.</p>
-            </div>
-            <div class="card p-6 rounded-xl">
-                <div class="text-3xl mb-3">🚀</div>
-                <h3 class="font-bold text-lg mb-1">Full-Stack Expert</h3>
-                <p class="text-gray-600 text-sm">Specialized in React, Node.js, and PostgreSQL with a focus on Secure SDLC and HIPAA.</p>
-            </div>
-            <div class="card p-6 rounded-xl">
-                <div class="text-3xl mb-3">📈</div>
-                <h3 class="font-bold text-lg mb-1">80% Automation</h3>
-                <p class="text-gray-600 text-sm">Proven track record of automating complex workflows and reducing manual labor significantly.</p>
-            </div>
-            <div class="card p-6 rounded-xl">
-                <div class="text-3xl mb-3">🧗</div>
-                <h3 class="font-bold text-lg mb-1">Rock Climber</h3>
-                <p class="text-gray-600 text-sm">Problem solver who enjoys scaling routes at Pacific Pipe and Great Western Power Company.</p>
-            </div>
-        </section>
-
-        <!-- Tech Stack -->
-        <section class="mb-12">
-            <h2 class="text-2xl font-bold mb-6 border-b pb-2">Modern Tech Stack & Tools</h2>
-            <div class="flex flex-wrap gap-8 justify-center bg-white p-8 rounded-xl border border-gray-100 shadow-sm">
-                <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/typescript/typescript-original.svg" alt="typescript" title="TypeScript" width="50" height="50"/>
-                <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/javascript/javascript-original.svg" alt="javascript" title="JavaScript" width="50" height="50"/>
-                <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/react/react-original-wordmark.svg" alt="react" title="React" width="50" height="50"/>
-                <img src="https://www.vectorlogo.zone/logos/supabase/supabase-icon.svg" alt="supabase" title="Supabase" width="50" height="50"/>
-                <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/postgresql/postgresql-original-wordmark.svg" alt="postgresql" title="PostgreSQL" width="50" height="50"/>
-                <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/python/python-original.svg" alt="python" title="Python" width="50" height="50"/>
-                <img src="https://www.vectorlogo.zone/logos/tailwindcss/tailwindcss-icon.svg" alt="tailwind" title="Tailwind CSS" width="50" height="50"/>
-            </div>
-        </section>
-
-        <!-- Contact/Footer -->
-        <footer class="text-center pt-8 border-t">
-            <h3 class="font-bold mb-4">Let's Connect</h3>
-            <div class="flex justify-center gap-6">
-                <a href="mailto:nschoeb@gmail.com" class="hover:opacity-75 transition-opacity">
-                    <img src="https://api.iconify.design/logos:google-gmail.svg" alt="Email" height="35" width="45" />
-                </a>
-                <a href="https://www.linkedin.com/in/nschoeb/">
-                  <img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn Profile" />
-                </a>
-            </div>
-            <p class="mt-8 text-gray-400 text-xs">© 2026 Nathaniel Schoeb</p>
-        </footer>
-
-    </main>
+<body>
+  <header class="topbar"><div class="wrap nav"><a class="brand" href="#home" aria-label="Nathaniel Schoeb, home">NATHANIEL SCHOEB</a><nav class="nav-links" aria-label="Main navigation"><a href="#work">Work</a><a href="#about">About</a><a href="#contact">Contact</a></nav></div></header>
+  <main>
+    <section class="hero wrap" id="home" aria-labelledby="hero-title"><div class="eyebrow">Senior Software Engineer &amp; Technical Lead</div><h1 id="hero-title">Secure software.<br>Thoughtful execution.</h1><p>I build reliable software for complex workflows. My work spans full-stack application development, architecture, and automation, with experience leading teams in regulated environments.</p><div class="actions"><a class="button primary" href="#work">Explore selected work <span aria-hidden="true">&nbsp;↓</span></a><a class="button" href="https://www.linkedin.com/in/nschoeb/" target="_blank" rel="noopener noreferrer">Connect on LinkedIn <span aria-hidden="true">&nbsp;↗</span></a></div><div class="impact" aria-label="Reduced manual reporting cycles by 80 percent"><strong>80%</strong><span>less time spent on manual compliance reporting through automation</span></div></section>
+    <section id="work" aria-labelledby="work-title"><div class="wrap"><div class="section-head"><h2 id="work-title">Selected work</h2><span class="section-note">A small sample of what I build</span></div><article class="project"><div class="project-copy"><div class="project-type">Interactive audio · Personal project</div><h3>QWERTY WAV Recorder</h3><p>An interactive keyboard instrument that maps QWERTY keys to musical notes. Choose a sound, play and record a melody, then export it as a WAV file.</p><div class="project-links"><a class="text-link" href="https://nschoeb.github.io/qwerty-wav-recorder/" target="_blank" rel="noopener noreferrer">Try the project <span aria-hidden="true">↗</span></a><a class="text-link" href="https://github.com/nschoeb/qwerty-wav-recorder" target="_blank" rel="noopener noreferrer">View the source <span aria-hidden="true">↗</span></a></div></div><div class="project-art" aria-hidden="true"><div class="keys"><span class="key">A</span><span class="key">W</span><span class="key">S</span><span class="key">E</span><span class="key">D</span><span class="key">F</span><span class="key">T</span><span class="key">G</span><span class="key">Y</span><span class="key">H</span><span class="key">U</span><span class="key">J</span></div></div></article></div></section>
+    <section id="about" aria-labelledby="about-title"><div class="wrap"><div class="section-head"><h2 id="about-title">About</h2></div><div class="about-grid"><div class="about"><p>I’m a hands-on software engineer and technical lead who enjoys turning complicated requirements into maintainable products. I work across architecture, implementation, automation, and team mentorship, with a focus on shipping useful software while taking security seriously.</p><p>In my current role, I’ve led work on secure healthcare data systems and automated compliance reporting. I keep the public details high-level to respect the sensitivity of that work.</p></div><div><p class="skills-label">Tools I work with</p><div class="skills" aria-label="Technical skills"><span>React</span><span>TypeScript</span><span>JavaScript</span><span>Node.js</span><span>PostgreSQL</span><span>Python</span><span>AWS</span><span>Docker</span><span>CI/CD</span><span>Secure SDLC</span></div></div></div></div></section>
+    <section id="experience" aria-labelledby="experience-title"><div class="wrap"><div class="section-head"><h2 id="experience-title">Experience</h2></div><article class="experience"><div class="experience-meta">Apr 2022 — Present<br>Kreative Technologies LLC</div><div><h3>Technical Lead / Software Engineer</h3><p>Architected and delivered secure web applications for sensitive healthcare data, led a cross-functional Agile team, and automated reporting workflows that reduced manual reporting cycles by 80%.</p></div></article></div></section>
+    <section id="contact" aria-labelledby="contact-title"><div class="wrap"><div class="contact"><div><div class="eyebrow">Get in touch</div><h2 id="contact-title">Let’s build something useful.</h2><p>For professional inquiries and collaboration, connect with me on LinkedIn.</p></div><a class="button primary" href="https://www.linkedin.com/in/nschoeb/" target="_blank" rel="noopener noreferrer">Contact me on LinkedIn <span aria-hidden="true">↗</span></a></div></div></section>
+  </main>
+  <footer><div class="wrap footer-inner"><span>© 2026 Nathaniel Schoeb</span><a class="text-link" href="#home">Back to top ↑</a></div></footer>
 </body>
 </html>
