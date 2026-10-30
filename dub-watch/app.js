@@ -3,8 +3,8 @@ const hostedDashboard=document.documentElement.dataset.mode==='public';
 const snapshotEndpoint=document.documentElement.dataset.snapshotUrl||'/api/data';
 let data, selectedKey = null, busy = false, budgetsDirty = false, savingBudgets = false, budgetRevision = 0;
 let requestingCheck = false, checkPoll = null, selectedZone = 'all';
-const budgetFields = [['budget2','courtside'],['budget5','rows2to5'],['budgetAll','lower'],['budgetOther','otherFront']];
-const zoneColors = {courtside:'#f8c74c',rows2to5:'#73aafa',lower:'#74d8b3',otherFront:'#c3a3f5'};
+const budgetFields = [['budgetCourt','courtside'],['budget2','row1'],['budget5','rows2to5'],['budgetAll','lower'],['budgetOther','otherFront']];
+const zoneColors = {courtside:'#ef9b99',row1:'#f8c74c',rows2to5:'#73aafa',lower:'#74d8b3',otherFront:'#c3a3f5'};
 const hiddenChartZones = new Set();
 let budgetDrag=null;
 function chartLimits(){return Object.fromEntries(budgetFields.map(([id,key])=>{
@@ -13,11 +13,12 @@ function chartLimits(){return Object.fromEntries(budgetFields.map(([id,key])=>{
 }));}
 function markBudgetDirty(){budgetsDirty=true;$('budget-status').textContent='Unsaved changes. Save thresholds to apply them to alerts.';budgetButtons();}
 function setBudgetDraft(key,value){$(budgetFields.find(([,band])=>band===key)[0]).value=value;markBudgetDirty();}
+function matchesRow(x){return $('rows').value==='all'||(typeof x.row==='number'&&x.row<=Number($('rows').value));}
 function inZone(x){return selectedZone==='all'||x.band===selectedZone;}
 const money = n => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(n);
 const time = t => new Date(t).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Los_Angeles'});
 function el(tag, text, cls) {const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;}
-function selectedRows() {return data.listings.filter(x=>inZone(x)&&($('section').value==='all'||x.section===$('section').value)&&($('rows').value==='all'||x.row<=Number($('rows').value))&&(!$('deals').checked||(x.withinCap??x.price<=x.limit))&&(!$('exceptional').checked||x.exceptional));}
+function selectedRows() {return data.listings.filter(x=>inZone(x)&&($('section').value==='all'||x.section===$('section').value)&&matchesRow(x)&&(!$('deals').checked||(x.withinCap??x.price<=x.limit))&&(!$('exceptional').checked||x.exceptional));}
 function render() {
   const automatic=data.dealScoring?.mode==='automatic';
   const all=data.listings, lower=all.filter(x=>x.level==='Lower'), first=lower.filter(x=>x.row<=5).sort((a,b)=>a.price-b.price)[0], low=lower[0];
@@ -52,7 +53,7 @@ function render() {
   if(!data.readOnly&&data.sharing?.url){const link=el('a','Open shared dashboard ↗');link.href=data.sharing.url;link.target='_blank';link.rel='noopener noreferrer';$('sharing-status').append(link,el('span',data.sharing.state==='error'?' · Upload failed; monitoring continues locally.':` · Last upload ${time(data.sharing.publishedAt)} Pacific`));}
   if(!data.readOnly&&data.ownerAccess?.enabled){const link=el('a','Private owner dashboard ↗');link.href=data.ownerAccess.url;link.target='_blank';link.rel='noopener noreferrer';$('sharing-status').append(el('span',' · '),link);}
   const rows=selectedRows(), sort=$('sort').value;
-  rows.sort((a,b)=>sort==='price'?a.price-b.price:sort==='row'?a.row-b.row||a.price-b.price:sort==='drop'?a.change-b.change||a.price-b.price:sort==='deal'?(b.discountPercent??-Infinity)-(a.discountPercent??-Infinity)||a.price-b.price:Number(b.qualifies)-Number(a.qualifies)||Number(!!b.exceptional)-Number(!!a.exceptional)||Object.keys(data.zones).indexOf(a.band)-Object.keys(data.zones).indexOf(b.band)||a.price-b.price);
+  rows.sort((a,b)=>sort==='price'?a.price-b.price:sort==='row'?String(a.row).localeCompare(String(b.row),'en',{numeric:true})||a.price-b.price:sort==='drop'?a.change-b.change||a.price-b.price:sort==='deal'?(b.discountPercent??-Infinity)-(a.discountPercent??-Infinity)||a.price-b.price:Number(b.qualifies)-Number(a.qualifies)||Number(!!b.exceptional)-Number(!!a.exceptional)||Object.keys(data.zones).indexOf(a.band)-Object.keys(data.zones).indexOf(b.band)||a.price-b.price);
   $('listings').replaceChildren();
   for(const x of rows){const tr=el('tr',undefined,`${x.qualifies?'qualified ':''}${selectedKey===x.key?'selected':''}`);tr.tabIndex=0;tr.setAttribute('aria-label',`Show price history for section ${x.section}, row ${x.row}`);
     tr.dataset.seatKey=x.key;
@@ -78,11 +79,11 @@ function drawChart(){
   const section=$('section').value, rowMax=$('rows').value==='all'?Infinity:Number($('rows').value);
   const zones=Object.keys(data.zones);
   const points=data.history.map(p=>{
-    const rows=p.rows.filter(x=>inZone(x)&&(section==='all'||x.section===section)&&x.row<=rowMax&&(!selectedKey||x.key===selectedKey));
+    const rows=p.rows.filter(x=>inZone(x)&&(section==='all'||x.section===section)&&matchesRow(x)&&(!selectedKey||x.key===selectedKey));
     const values={};for(const key of zones){const prices=rows.filter(x=>x.band===key).map(x=>x.price);values[key]=prices.length?Math.min(...prices):null;}
     return {at:p.at,...values};
   });
-  $('chart-subtitle').textContent=selectedKey?`Section ${selectedKey.split(':')[0]} · Row ${selectedKey.split(':')[1]}`:section==='all'?(selectedZone==='all'?'Cheapest tracked tickets':data.zones[selectedZone]):`Cheapest observed in Section ${section}`;
+  $('chart-subtitle').textContent=selectedKey?`Section ${selectedKey.split(':').at(-2)} · Row ${selectedKey.split(':').at(-1)}`:section==='all'?(selectedZone==='all'?'Cheapest tracked tickets':data.zones[selectedZone]):`Cheapest observed in Section ${section}`;
   $('clear-chart').hidden=!selectedKey;const target=$('chart');target.replaceChildren();
   $('chart-legend').replaceChildren();
   for(const key of zones){
@@ -125,7 +126,7 @@ function drawChart(){
     const line=node('line',{x1:49,y1:Y(budget),x2:337,y2:Y(budget),stroke:zoneColors[key],'stroke-width':1.8,'stroke-dasharray':dash,'stroke-dashoffset':shared.indexOf(key)*7,'data-budget-zone':key,'data-budget':budget});
     const title=document.createElementNS(ns,'title');title.textContent=label;line.append(title);
     if(data.readOnly){title.textContent=`${data.zones[key]} saved budget: ${money(budget)}`;line.setAttribute('tabindex','0');line.setAttribute('role','img');line.setAttribute('aria-label',title.textContent);line.addEventListener('focus',()=>{$('chart-detail').textContent=title.textContent;});continue;}
-    const x=78+zones.indexOf(key)*76;
+    const x=66+zones.indexOf(key)*(254/Math.max(1,zones.length-1));
     // Separate handles keep zones independently selectable at equal budgets.
     const hit=node('line',{x1:49,y1:Y(budget),x2:337,y2:Y(budget),stroke:'transparent','stroke-width':14,'vector-effect':'non-scaling-stroke','data-budget-hit':key});
     const handle=node('circle',{cx:x,cy:Y(budget),r:5,fill:zoneColors[key],stroke:'#0b101a','stroke-width':1.5,'data-budget-handle-visual':key});
