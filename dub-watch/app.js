@@ -7,6 +7,19 @@ const budgetFields = [['budgetCourt','courtside'],['budget2','row1'],['budget5',
 const zoneColors = {courtside:'#ef9b99',row1:'#f8c74c',rows2to5:'#73aafa',lower:'#74d8b3',otherFront:'#c3a3f5'};
 const hiddenChartZones = new Set();
 let budgetDrag=null;
+function normalizeSeatZones(snapshot){
+  // Older cached public snapshots used 'courtside' for ordinary lower row 1.
+  // Correct those records before rendering while the CDN catches up.
+  if(snapshot.zones&&!snapshot.zones.row1&&snapshot.zones.courtside){
+    const {courtside,...otherZones}=snapshot.zones;
+    snapshot.zones={courtside:'Court-side',row1:'Row 1',...otherZones};
+    snapshot.limits={...snapshot.limits,row1:snapshot.limits.courtside};
+    for(const row of [...snapshot.listings,...snapshot.history.flatMap(point=>point.rows)]){
+      if(row.band==='courtside'){row.band='row1';row.zone='Row 1';}
+    }
+  }
+  return snapshot;
+}
 function chartLimits(){return Object.fromEntries(budgetFields.map(([id,key])=>{
   const input=$(id), value=Number(input.value);
   return [key,budgetsDirty&&input.value.trim()!==''&&Number.isInteger(value)&&value>=0&&value<=10000?value:data.limits[key]];
@@ -189,7 +202,7 @@ function drawChart(){
   node('text',{x:49,y:222},time(points[0].at));if(points.length>1)node('text',{x:337,y:222,'text-anchor':'end'},time(points.at(-1).at));target.append(svg);
   $('chart-detail').textContent=`${points.length} browser snapshots. ${points.length<2?'More history will appear after the next check.':'Hover or tap a point for its zone and price. Toggle legend entries to compare lines.'}`;
 }
-async function load(){if(busy||savingBudgets||requestingCheck||budgetDrag)return;busy=true;const revision=budgetRevision;$('refresh').disabled=true;try{const response=await fetch(hostedDashboard?snapshotEndpoint+(snapshotEndpoint.includes('?')?'&':'?')+'updated='+Date.now():snapshotEndpoint,{cache:'no-store'});if(!response.ok)throw Error('Data unavailable');const fresh=await response.json();if(revision!==budgetRevision)return;data=fresh;if(hostedDashboard){data.readOnly=true;data.finished=Date.now()>=new Date(data.tipoff).getTime();}const prior=$('section').value;const sections=[...new Set(data.listings.map(x=>x.section))].sort();$('section').replaceChildren(new Option('All tracked sections','all'),...sections.map(s=>new Option(`Section ${s}`,s)));$('section').value=sections.includes(prior)?prior:'all';render();}catch(error){$('health').textContent='Dashboard disconnected';$('notice').className='notice warning';$('notice').textContent='Cannot read the monitor data. Showing the previous display, which may be outdated. Refresh to retry.';}finally{busy=false;$('refresh').disabled=false;}}
+async function load(){if(busy||savingBudgets||requestingCheck||budgetDrag)return;busy=true;const revision=budgetRevision;$('refresh').disabled=true;try{const response=await fetch(hostedDashboard?snapshotEndpoint+(snapshotEndpoint.includes('?')?'&':'?')+'updated='+Date.now():snapshotEndpoint,{cache:'no-store'});if(!response.ok)throw Error('Data unavailable');const fresh=await response.json();if(revision!==budgetRevision)return;data=normalizeSeatZones(fresh);if(hostedDashboard){data.readOnly=true;data.finished=Date.now()>=new Date(data.tipoff).getTime();}const prior=$('section').value;const sections=[...new Set(data.listings.map(x=>x.section))].sort();$('section').replaceChildren(new Option('All tracked sections','all'),...sections.map(s=>new Option(`Section ${s}`,s)));$('section').value=sections.includes(prior)?prior:'all';render();}catch(error){$('health').textContent='Dashboard disconnected';$('notice').className='notice warning';$('notice').textContent='Cannot read the monitor data. Showing the previous display, which may be outdated. Refresh to retry.';}finally{busy=false;$('refresh').disabled=false;}}
 for(const id of ['section','rows','sort','deals','exceptional'])$(id).addEventListener('change',()=>{if(id==='section'||id==='rows')selectedKey=null;if(data)render();});
 function fillBudgets(){for(const [id,key]of [...budgetFields])$(id).value=data.limits[key];}
 function budgetButtons(){ const readOnly=hostedDashboard||data?.readOnly;$('save-budgets').hidden=readOnly;$('save-budgets').disabled=!budgetsDirty||savingBudgets||readOnly;$('cancel-budgets').hidden=!budgetsDirty||readOnly;$('cancel-budgets').disabled=savingBudgets;for(const id of budgetFields.map(([id])=>id))$(id).disabled=savingBudgets||readOnly;}
