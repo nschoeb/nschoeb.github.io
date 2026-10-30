@@ -17,12 +17,17 @@ function inZone(x){return selectedZone==='all'||x.band===selectedZone;}
 const money = n => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(n);
 const time = t => new Date(t).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Los_Angeles'});
 function el(tag, text, cls) {const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;}
-function selectedRows() {return data.listings.filter(x=>inZone(x)&&($('section').value==='all'||x.section===$('section').value)&&($('rows').value==='all'||x.row<=Number($('rows').value))&&(!$('deals').checked||x.qualifies));}
+function selectedRows() {return data.listings.filter(x=>inZone(x)&&($('section').value==='all'||x.section===$('section').value)&&($('rows').value==='all'||x.row<=Number($('rows').value))&&(!$('deals').checked||(x.withinCap??x.price<=x.limit))&&(!$('exceptional').checked||x.exceptional));}
 function render() {
+  const automatic=data.dealScoring?.mode==='automatic';
   const all=data.listings, lower=all.filter(x=>x.level==='Lower'), first=lower.filter(x=>x.row<=5).sort((a,b)=>a.price-b.price)[0], low=lower[0];
   $('low').textContent=low?money(low.price):'—';$('low-seat').textContent=low?`Section ${low.section} · Row ${low.row}`:'No seated inventory captured';
   $('front').textContent=first?money(first.price):'—';$('front-seat').textContent=first?`Section ${first.section} · Row ${first.row}`:'No front-row inventory captured';
   $('qualifying').textContent=all.filter(x=>x.qualifies).length;$('last').textContent=data.capturedAt?time(data.capturedAt):'—';$('capture-count').textContent=`${all.length} tracked listings observed`;
+  $('qualifying-label').textContent=automatic?'AUTOMATIC ALERT MATCHES':'WITHIN YOUR BUDGETS';
+  $('budget-panel-title').textContent=automatic?'Spending caps':'Your deal zone';
+  $('exceptional-filter').hidden=!automatic;$('deal-policy').hidden=!automatic;
+  if(automatic)$('deal-policy').textContent=`Automatic deals: at least ${data.dealScoring.discountPercent}% below a same-section asking-price reference. Targets adjust with this game's market; dollar settings are spending caps. ${all.filter(x=>x.exceptional).length} exceptional offers, ${all.filter(x=>x.qualifies).length} within caps. Learning = insufficient comparisons. These are asking prices, not completed sales.`;
   const age=data.capturedAt?Math.max(0,(Date.now()-new Date(data.capturedAt))/1000):Infinity;
   const stale=age>data.maxAgeSeconds;
   const standalone=data.runner==='standalone', runtime=data.runtime||{};
@@ -45,14 +50,22 @@ function render() {
   $('next-check').textContent=standalone&&runtime.nextCheckAt&&!data.finished?`Next check around ${time(runtime.nextCheckAt)} Pacific.`:'';
   $('sharing-status').replaceChildren();
   if(!data.readOnly&&data.sharing?.url){const link=el('a','Open shared dashboard ↗');link.href=data.sharing.url;link.target='_blank';link.rel='noopener noreferrer';$('sharing-status').append(link,el('span',data.sharing.state==='error'?' · Upload failed; monitoring continues locally.':` · Last upload ${time(data.sharing.publishedAt)} Pacific`));}
+  if(!data.readOnly&&data.ownerAccess?.enabled){const link=el('a','Private owner dashboard ↗');link.href=data.ownerAccess.url;link.target='_blank';link.rel='noopener noreferrer';$('sharing-status').append(el('span',' · '),link);}
   const rows=selectedRows(), sort=$('sort').value;
-  rows.sort((a,b)=>sort==='price'?a.price-b.price:sort==='row'?a.row-b.row||a.price-b.price:sort==='drop'?a.change-b.change||a.price-b.price:Number(b.qualifies)-Number(a.qualifies)||Object.keys(data.zones).indexOf(a.band)-Object.keys(data.zones).indexOf(b.band)||a.price-b.price);
+  rows.sort((a,b)=>sort==='price'?a.price-b.price:sort==='row'?a.row-b.row||a.price-b.price:sort==='drop'?a.change-b.change||a.price-b.price:sort==='deal'?(b.discountPercent??-Infinity)-(a.discountPercent??-Infinity)||a.price-b.price:Number(b.qualifies)-Number(a.qualifies)||Number(!!b.exceptional)-Number(!!a.exceptional)||Object.keys(data.zones).indexOf(a.band)-Object.keys(data.zones).indexOf(b.band)||a.price-b.price);
   $('listings').replaceChildren();
   for(const x of rows){const tr=el('tr',undefined,`${x.qualifies?'qualified ':''}${selectedKey===x.key?'selected':''}`);tr.tabIndex=0;tr.setAttribute('aria-label',`Show price history for section ${x.section}, row ${x.row}`);
+    tr.dataset.seatKey=x.key;
     const seat=el('td');seat.append(el('b',`${x.level} ${x.section}`),el('small',`Row ${x.row}${x.row<=5?' · FRONT ROWS':''}`));tr.append(seat);
     const price=el('td');price.append(el('span',money(x.price),'price'),el('small','1 ticket · includes fees'));tr.append(price);
     const change=el('td',x.change===0?'—':`${x.change>0?'+':'−'}${money(Math.abs(x.change))}`,x.change<0?'drop':x.change>0?'rise':'flat');tr.append(change);
     const status=el('td');status.append(el('span',x.qualifies?'Within budget':x.zone,`badge ${x.qualifies?'good':x.row<=5?'front':''}`));if(x.verifiedAt)status.append(el('small',`Verified ${time(x.verifiedAt)}`));else status.append(el('small','From listing page'));tr.append(status);
+    if(automatic){
+      status.replaceChildren(el('span',x.exceptional?(x.withinCap?'Exceptional · alert match':'Exceptional · over cap'):x.confidence==='insufficient'?'Learning':'Watching',`badge ${x.exceptional?'good':''}`));
+      status.append(el('small',x.dealTarget==null?'No automatic target yet':`Auto target ${money(x.dealTarget)} · ${Math.abs(x.discountPercent).toFixed(0)}% ${x.discountPercent>=0?'below':'above'} reference`));
+      status.append(el('small',x.comparisonBasis==='same-row history'?`${x.historySamples} spaced checks · same section & row`:x.comparisonBasis==='nearby-row offers'?`${x.comparableCount} offers · same section, nearby rows`:'Waiting for comparable offers or same-row history'));
+      if(x.referencePrice!=null)status.title=`Asking-price reference ${money(x.referencePrice)}; alert ceiling ${money(x.alertCeiling)} including your spending cap. ${x.confidence} confidence. Not a sold-price estimate.`;
+    }
     const action=el('td'), a=el('a','View ↗','ticket-link');a.href=x.url;a.target='_blank';a.rel='noopener noreferrer';a.setAttribute('aria-label',`View section ${x.section} row ${x.row} on Gametime`);a.addEventListener('click',e=>e.stopPropagation());action.append(a);tr.append(action);
     const choose=()=>{selectedKey=x.key;render();};tr.addEventListener('click',choose);tr.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose();}});$('listings').append(tr);
   }
@@ -61,6 +74,7 @@ function render() {
 function drawChart(){
   if(budgetDrag)return;
   const limits=chartLimits();
+  const automatic=data.dealScoring?.mode==='automatic';
   const section=$('section').value, rowMax=$('rows').value==='all'?Infinity:Number($('rows').value);
   const zones=Object.keys(data.zones);
   const points=data.history.map(p=>{
@@ -78,21 +92,30 @@ function drawChart(){
     const swatch=el('i');swatch.style.background=zoneColors[key];
     const copy=el('div',undefined,'chart-legend-copy'), gap=last==null?null:last-limits[key];
     const distance=gap===null?'No current offer':gap===0?'At budget':`${money(Math.abs(gap))} ${gap>0?'over':'below'} budget`;
-    copy.append(el('span',data.zones[key]),el('small',`Budget ${money(limits[key])} · ${distance}`,'chart-budget-summary'+(gap!==null&&gap<=0?' within-budget':'')));
+    copy.append(el('span',data.zones[key]),el('small',`${automatic?'Cap':'Budget'} ${money(limits[key])} · ${distance}`,'chart-budget-summary'+(gap!==null&&gap<=0?' within-budget':'')));
     button.append(swatch,copy,el('strong',last==null?'—':money(last)));
     button.addEventListener('click',()=>{if(hiddenChartZones.has(key))hiddenChartZones.delete(key);else hiddenChartZones.add(key);drawChart();});
     $('chart-legend').append(button);
   }
-  $('chart-legend').append(el('p',`Solid = asking prices · Dashed = ${budgetsDirty?'unsaved budget preview':'saved budgets'}.${data.readOnly?' View-only shared snapshot.':' Drag a colored handle; release to save that zone.'}`,'chart-line-key'));
+  $('chart-legend').append(el('p',`Solid = asking prices · Dashed = ${budgetsDirty?'unsaved cap preview':automatic?'spending caps':'saved budgets'}.${automatic?' Select a table row to see its automatic target.':''}${data.readOnly?' View-only shared snapshot.':' Drag a colored handle; release to save that zone.'}`,'chart-line-key'));
   const active=zones.filter(key=>!hiddenChartZones.has(key)), valid=points.flatMap(p=>active.map(key=>p[key])).filter(x=>x!==null);
   if(!valid.length){target.append(el('p',active.length?'No matching price history yet.':'Select a zone in the legend to show its price history.','footnote'));$('chart-detail').textContent='Each line tracks the cheapest observed ticket in its zone.';return;}
   const ns='http://www.w3.org/2000/svg', svg=document.createElementNS(ns,'svg');svg.setAttribute('viewBox','0 0 360 240');svg.setAttribute('role','group');svg.setAttribute('aria-label','Cheapest all-in ticket prices over time by seat zone');
   const node=(tag,attrs,text)=>{const n=document.createElementNS(ns,tag);for(const [k,v]of Object.entries(attrs))n.setAttribute(k,v);if(text)n.textContent=text;svg.append(n);return n;};
   const budgetZones=active.filter(key=>(selectedZone==='all'||selectedZone===key)&&(!selectedKey||points.some(p=>p[key]!==null)));
-  const domain=[...valid,...budgetZones.map(key=>limits[key])];
+  const selectedOffer=automatic&&selectedKey?data.listings.find(x=>x.key===selectedKey&&active.includes(x.band)):null;
+  const autoTarget=selectedOffer?.dealTarget;
+  const domain=[...valid,...budgetZones.map(key=>limits[key]),...(autoTarget==null?[]:[autoTarget])];
   const min=Math.max(0,Math.floor(Math.min(...domain)*.9/10)*10), max=Math.ceil(Math.max(...domain)*1.08/10)*10||10;
   const first=new Date(points[0].at).getTime(),last=new Date(points.at(-1).at).getTime();const X=p=>49+(last===first?144:288*(new Date(p.at).getTime()-first)/(last-first)),Y=v=>192-168*(v-min)/(max-min);
   for(let i=0;i<4;i++){const value=min+(max-min)*i/3;node('line',{x1:49,y1:Y(value),x2:337,y2:Y(value),stroke:'#2b3a50','stroke-dasharray':'3 4'});node('text',{x:2,y:Y(value)+3},money(value));}
+  if(autoTarget!=null){
+    const label=`Current automatic deal target for section ${selectedOffer.section}, row ${selectedOffer.row}: ${money(autoTarget)}. Spending cap ${money(limits[selectedOffer.band])}.`;
+    const line=node('line',{x1:49,y1:Y(autoTarget),x2:337,y2:Y(autoTarget),stroke:zoneColors[selectedOffer.band],'stroke-width':2.5,'stroke-dasharray':'2 4','data-auto-target':autoTarget,tabindex:0,role:'img','aria-label':label});
+    const title=document.createElementNS(ns,'title');title.textContent=label;line.append(title);
+    line.addEventListener('focus',()=>{$('chart-detail').textContent=label;});
+    $('chart-legend').querySelector('.chart-line-key').textContent=`Solid = asking prices · Dashed = spending cap · Dotted = current automatic target ${money(autoTarget)}. This target adapts to comparable asking prices.`;
+  }
   const budgetControls=[];
   for(const key of budgetZones){
     const budget=limits[key], shared=budgetZones.filter(other=>limits[other]===budget);
@@ -166,7 +189,7 @@ function drawChart(){
   $('chart-detail').textContent=`${points.length} browser snapshots. ${points.length<2?'More history will appear after the next check.':'Hover or tap a point for its zone and price. Toggle legend entries to compare lines.'}`;
 }
 async function load(){if(busy||savingBudgets||requestingCheck||budgetDrag)return;busy=true;const revision=budgetRevision;$('refresh').disabled=true;try{const response=await fetch(hostedDashboard?snapshotEndpoint+(snapshotEndpoint.includes('?')?'&':'?')+'updated='+Date.now():snapshotEndpoint,{cache:'no-store'});if(!response.ok)throw Error('Data unavailable');const fresh=await response.json();if(revision!==budgetRevision)return;data=fresh;if(hostedDashboard){data.readOnly=true;data.finished=Date.now()>=new Date(data.tipoff).getTime();}const prior=$('section').value;const sections=[...new Set(data.listings.map(x=>x.section))].sort();$('section').replaceChildren(new Option('All tracked sections','all'),...sections.map(s=>new Option(`Section ${s}`,s)));$('section').value=sections.includes(prior)?prior:'all';render();}catch(error){$('health').textContent='Dashboard disconnected';$('notice').className='notice warning';$('notice').textContent='Cannot read the monitor data. Showing the previous display, which may be outdated. Refresh to retry.';}finally{busy=false;$('refresh').disabled=false;}}
-for(const id of ['section','rows','sort','deals'])$(id).addEventListener('change',()=>{if(id==='section'||id==='rows')selectedKey=null;if(data)render();});
+for(const id of ['section','rows','sort','deals','exceptional'])$(id).addEventListener('change',()=>{if(id==='section'||id==='rows')selectedKey=null;if(data)render();});
 function fillBudgets(){for(const [id,key]of [...budgetFields])$(id).value=data.limits[key];}
 function budgetButtons(){ const readOnly=hostedDashboard||data?.readOnly;$('save-budgets').hidden=readOnly;$('save-budgets').disabled=!budgetsDirty||savingBudgets||readOnly;$('cancel-budgets').hidden=!budgetsDirty||readOnly;$('cancel-budgets').disabled=savingBudgets;for(const id of budgetFields.map(([id])=>id))$(id).disabled=savingBudgets||readOnly;}
 for(const id of budgetFields.map(([id])=>id))$(id).addEventListener('input',()=>{markBudgetDirty();if(data)drawChart();});
@@ -184,11 +207,12 @@ document.addEventListener('keydown',event=>{if(event.key==='Escape'&&budgetDrag)
 async function saveBudgets(onlyKey=null){
   if(!data||hostedDashboard||data.readOnly||savingBudgets||budgetDrag||(!onlyKey&&!$('budget-form').reportValidity()))return;
   const limits=onlyKey?{...data.limits,[onlyKey]:chartLimits()[onlyKey]}:Object.fromEntries(budgetFields.map(([id,key])=>[key,Number($(id).value)]));
+  const otherDrafts=new Map(budgetFields.filter(([id,key])=>key!==onlyKey&&$(id).value!==String(data.limits[key])).map(([id,key])=>[key,$(id).value]));
   if(!Object.values(limits).every(x=>Number.isInteger(x)&&x>=0&&x<=10000)){$('budget-status').textContent='Enter whole-dollar amounts from $0 to $10,000.';return;}
   savingBudgets=true;budgetRevision++;budgetButtons();$('budget-status').textContent=onlyKey?`Saving ${data.zones[onlyKey]}…`:'Saving…';
-  try{const response=await fetch('/api/limits',{method:'POST',headers:{'Content-Type':'application/json','X-Dub-Watch':'dashboard'},body:JSON.stringify(limits)});const result=await response.json();if(!response.ok)throw Error(result.error||'Could not save thresholds.');data.limits=result.limits;
-    for(const listing of data.listings){listing.limit=result.limits[listing.band];listing.qualifies=listing.price<=listing.limit;}
-    if(onlyKey){$(budgetFields.find(([,key])=>key===onlyKey)[0]).value=result.limits[onlyKey];budgetsDirty=budgetFields.some(([id,key])=>$(id).value!==String(result.limits[key]));}
+  try{const response=await fetch('/api/limits',{method:'POST',headers:{'Content-Type':'application/json','X-Dub-Watch':'dashboard'},body:JSON.stringify(onlyKey?{zone:onlyKey,value:limits[onlyKey]}:limits)});const result=await response.json();if(!response.ok)throw Error(result.error||'Could not save thresholds.');data.limits=result.limits;
+    for(const listing of data.listings){listing.limit=result.limits[listing.band];listing.withinCap=listing.price<=listing.limit;listing.qualifies=listing.withinCap&&(data.dealScoring?.mode==='automatic'?listing.exceptional:true);listing.alertCeiling=listing.dealTarget==null?null:Math.min(listing.dealTarget,listing.limit);}
+    if(onlyKey){for(const [id,key]of budgetFields)$(id).value=otherDrafts.has(key)?otherDrafts.get(key):result.limits[key];budgetsDirty=budgetFields.some(([id,key])=>$(id).value!==String(result.limits[key]));}
     else budgetsDirty=false;
     $('budget-status').textContent=onlyKey?`Saved ${data.zones[onlyKey]} at ${money(result.limits[onlyKey])}. Alerts use it on the next check.${budgetsDirty?' Other edits remain unsaved.':''}`:'Saved. Deal highlights updated; Windows alerts use these thresholds on the next check.';render();
   }catch(error){$('budget-status').textContent=`${onlyKey?'Auto-save failed. ':''}${error.message||'Could not save.'} Changes remain unsaved; use Save thresholds to retry.`;}
@@ -225,7 +249,7 @@ function renderZones(){
   for(const [key,label]of Object.entries(data.zones)){
     const rows=data.listings.filter(x=>x.band===key), button=el('button',undefined,'zone-card'+(selectedZone===key?' active':''));
     button.type='button';button.setAttribute('aria-pressed',String(selectedZone===key));button.dataset.zone=key;
-    button.append(el('span',label),el('strong',rows.length?money(Math.min(...rows.map(x=>x.price))):'No listings'),el('small',`${rows.length} listings | ${rows.filter(x=>x.qualifies).length} within budget`));
+    button.append(el('span',label),el('strong',rows.length?money(Math.min(...rows.map(x=>x.price))):'No listings'),el('small',`${rows.length} listings | ${rows.filter(x=>x.qualifies).length} ${data.dealScoring?.mode==='automatic'?'alert matches':'within budget'}`));
     button.addEventListener('click',()=>{selectedZone=selectedZone===key?'all':key;selectedKey=null;$('section').value='all';$('rows').value='all';render();});
     $('zone-cards').append(button);
   }
