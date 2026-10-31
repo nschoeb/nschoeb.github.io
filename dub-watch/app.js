@@ -355,8 +355,8 @@ $('game-picker').addEventListener('change',event=>switchGame(event.target.value)
 $('add-watch').addEventListener('click',()=>{if(!hostedDashboard&&!data?.readOnly)$('add-watch-dialog').showModal();});
 $('close-add-watch').addEventListener('click',()=>$('add-watch-dialog').close());
 $('watch-url').addEventListener('input',()=>{
-  const match=$('watch-url').value.match(/\/([^/]+)\/(\d{2})-(\d{2})-(\d{4})-san-francisco-ca-chase-center\/events\//i);
-  if(match){$('watch-tipoff').value=`${match[4]}-${match[2]}-${match[3]}T19:00`;if(!$('watch-title').value)$('watch-title').value=match[1].replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());}
+  const match=$('watch-url').value.match(/\/([^/]+)\/(\d{1,2})-(\d{1,2})-(\d{4})-san-francisco-ca-chase-center\/events\//i);
+  if(match){$('watch-tipoff').value=`${match[4]}-${match[2].padStart(2,'0')}-${match[3].padStart(2,'0')}T19:00`;if(!$('watch-title').value)$('watch-title').value=match[1].replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());}
 });
 $('add-watch-form').addEventListener('submit',async event=>{
   event.preventDefault();if(hostedDashboard||data?.readOnly)return;
