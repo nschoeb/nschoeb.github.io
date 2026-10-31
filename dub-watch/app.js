@@ -404,6 +404,7 @@ $('save-defaults').addEventListener('click',async()=>{
 
 function renderUpcoming(){
   const readOnly=hostedDashboard||data?.readOnly;
+  $('upcoming-panel').hidden=!!readOnly;
   $('upcoming-help').textContent=readOnly?'Chase Center · All times Pacific. The owner chooses which games to watch.':'Chase Center · All times Pacific. Pick a game to start its own watch.';
   $('browse-games').hidden=readOnly;$('refresh-schedule').hidden=readOnly;
   $('browse-games').disabled=savingBudgets||budgetsDirty||!!addingUpcoming;
