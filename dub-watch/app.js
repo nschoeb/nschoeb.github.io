@@ -2,6 +2,8 @@ const $ = id => document.getElementById(id);
 const hostedDashboard=document.documentElement.dataset.mode==='public';
 const snapshotEndpoint=document.documentElement.dataset.snapshotUrl||'/api/data';
 let data, selectedKey = null, busy = false, budgetsDirty = false, savingBudgets = false, budgetRevision = 0;
+let activeGameId=new URLSearchParams(location.search).get('game'), reloadRequested=false;
+function postHeaders(){return {'Content-Type':'application/json','X-Dub-Watch':'dashboard',...(activeGameId?{'X-Dub-Watch-Game':activeGameId}:{})};}
 let requestingCheck = false, checkPoll = null, selectedZone = 'all';
 const budgetFields = [['budgetCourt','courtside'],['budget2','row1'],['budget5','rows2to5'],['budgetAll','lower'],['budgetOther','otherFront']];
 const zoneColors = {courtside:'#ef9b99',row1:'#f8c74c',rows2to5:'#73aafa',lower:'#74d8b3',otherFront:'#c3a3f5'};
@@ -29,10 +31,11 @@ function setBudgetDraft(key,value){$(budgetFields.find(([,band])=>band===key)[0]
 function matchesRow(x){return $('rows').value==='all'||(typeof x.row==='number'&&x.row<=Number($('rows').value));}
 function inZone(x){return selectedZone==='all'||x.band===selectedZone;}
 const money = n => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(n);
-const time = t => new Date(t).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Los_Angeles'});
+const time = t => t?new Date(t).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Los_Angeles'}):'—';
 function el(tag, text, cls) {const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;}
 function selectedRows() {return data.listings.filter(x=>inZone(x)&&($('section').value==='all'||x.section===$('section').value)&&matchesRow(x)&&(!$('deals').checked||(x.withinCap??x.price<=x.limit))&&(!$('exceptional').checked||x.exceptional));}
 function render() {
+  renderWatches();
   const automatic=data.dealScoring?.mode==='automatic';
   const all=data.listings, lower=all.filter(x=>x.level==='Lower'), first=lower.filter(x=>x.row<=5).sort((a,b)=>a.price-b.price)[0], low=lower[0];
   $('low').textContent=low?money(low.price):'—';$('low-seat').textContent=low?`Section ${low.section} · Row ${low.row}`:'No seated inventory captured';
@@ -49,22 +52,27 @@ function render() {
   const workerError=standalone&&(!runtime.processAlive||runtime.state==='error'||runtime.state==='warning');
   $('health').textContent=data.finished?'Monitoring window ended':workerError?'Standalone monitor needs attention':standalone?'Standalone monitor running':stale?'Browser data needs a refresh':'Recent browser observation';
   $('notice').className='notice'+(stale||workerError?' warning':'');
-  $('notice').textContent=data.finished?'Tipoff cutoff reached. Showing the last recorded snapshot.':stale?'The browser snapshot is over 10 minutes old. Displayed listings may be outdated; check the monitor in Codex.':`Snapshot from ${time(data.capturedAt)} Pacific. Browser checks are scheduled every ${data.intervalMinutes} minutes; availability can change between checks.`;
+  $('notice').textContent=data.finished?'Tipoff cutoff reached. Showing the last recorded snapshot.':stale?`This snapshot is over ${Math.round(data.maxAgeSeconds/60)} minutes old. Displayed listings may be outdated; check the standalone monitor.`:`Snapshot from ${time(data.capturedAt)} Pacific. Browser checks are scheduled every ${data.intervalMinutes} minutes; availability can change between checks.`;
   if(workerError&&!data.finished)$('notice').textContent=!runtime.processAlive?'Standalone worker is not running. Start it with start-monitor.ps1. Displaying the last saved ticket data.':`The last browser check needs attention: ${runtime.error||'verification incomplete'}. The worker will retry; displayed prices may be outdated.`;
   else if(standalone&&stale&&!data.finished)$('notice').textContent='The last successful browser snapshot is over 10 minutes old. The worker is running, but displayed listings may be outdated.';
+  if(!data.capturedAt)$('notice').textContent='No ticket check recorded for this game yet. Its prices and deal targets will start learning after its first check.';
   if(data.readOnly){
     $('health').textContent=data.finished?'Monitoring window ended':stale?'Shared prices are outdated':'Shared dashboard';
     $('notice').textContent=data.finished?'The monitoring window has ended. Showing the last shared snapshot.':stale?`Last ticket check ${time(data.capturedAt)} Pacific. These prices are over ${Math.round(data.maxAgeSeconds/60)} minutes old; the home computer may be offline.`:`Ticket check ${time(data.capturedAt)} Pacific · Uploaded ${time(data.publishedAt)} Pacific. Availability can change between checks.`;
     $('check-now').hidden=true;$('budget-status').textContent='View-only. Budgets are managed on the computer running the monitor.';
     budgetButtons();
   }
+  if(data.readOnly&&!data.capturedAt)$('notice').textContent='No ticket snapshot has been shared for this game yet. The home computer will upload its first check.';
+  if(!data.capturedAt)$('health').textContent='Waiting for first check';
+  if(data.watchEnabled===false&&!data.finished){$('health').textContent='Watch paused';$('notice').textContent='This watch is paused. Showing its last saved prices; automatic checks resume when the owner restarts this watch.';}
   if(!budgetsDirty&&!savingBudgets)fillBudgets();
+  budgetButtons();
   $('monitor-description').textContent=standalone?`Windows notifications · checks every ${data.intervalMinutes} minutes until tipoff. No AI tokens. Keep this computer awake and online; Codex can be closed.`:`Alerts in Codex · checks every ${data.intervalMinutes} minutes until tipoff. Keep Codex open and this computer awake.`;
   if(data.readOnly)$('monitor-description').textContent=`The home computer checks tickets about every ${data.intervalMinutes} minutes and uploads snapshots here. Monitoring and Windows notifications run on that computer.`;
   $('next-check').textContent=standalone&&runtime.nextCheckAt&&!data.finished?`Next check around ${time(runtime.nextCheckAt)} Pacific.`:'';
   $('sharing-status').replaceChildren();
-  if(!data.readOnly&&data.sharing?.url){const link=el('a','Open shared dashboard ↗');link.href=data.sharing.url;link.target='_blank';link.rel='noopener noreferrer';$('sharing-status').append(link,el('span',data.sharing.state==='error'?' · Upload failed; monitoring continues locally.':` · Last upload ${time(data.sharing.publishedAt)} Pacific`));}
-  if(!data.readOnly&&data.ownerAccess?.enabled){const link=el('a','Private owner dashboard ↗');link.href=data.ownerAccess.url;link.target='_blank';link.rel='noopener noreferrer';$('sharing-status').append(el('span',' · '),link);}
+  if(!data.readOnly&&data.sharing?.url){const link=el('a','Open shared dashboard ↗');link.href=data.sharing.url+(activeGameId?'?game='+encodeURIComponent(activeGameId):'');link.target='_blank';link.rel='noopener noreferrer';$('sharing-status').append(link,el('span',data.sharing.state==='error'?' · Upload failed; monitoring continues locally.':` · Last upload ${time(data.sharing.publishedAt)} Pacific`));}
+  if(!data.readOnly&&data.ownerAccess?.enabled){const link=el('a','Private owner dashboard ↗');link.href=data.ownerAccess.url+(activeGameId?'?game='+encodeURIComponent(activeGameId):'');link.target='_blank';link.rel='noopener noreferrer';$('sharing-status').append(el('span',' · '),link);}
   const rows=selectedRows(), sort=$('sort').value;
   rows.sort((a,b)=>sort==='price'?a.price-b.price:sort==='row'?String(a.row).localeCompare(String(b.row),'en',{numeric:true})||a.price-b.price:sort==='drop'?a.change-b.change||a.price-b.price:sort==='deal'?(b.discountPercent??-Infinity)-(a.discountPercent??-Infinity)||a.price-b.price:Number(b.qualifies)-Number(a.qualifies)||Number(!!b.exceptional)-Number(!!a.exceptional)||Object.keys(data.zones).indexOf(a.band)-Object.keys(data.zones).indexOf(b.band)||a.price-b.price);
   $('listings').replaceChildren();
@@ -202,10 +210,35 @@ function drawChart(){
   node('text',{x:49,y:222},time(points[0].at));if(points.length>1)node('text',{x:337,y:222,'text-anchor':'end'},time(points.at(-1).at));target.append(svg);
   $('chart-detail').textContent=`${points.length} browser snapshots. ${points.length<2?'More history will appear after the next check.':'Hover or tap a point for its zone and price. Toggle legend entries to compare lines.'}`;
 }
-async function load(){if(busy||savingBudgets||requestingCheck||budgetDrag)return;busy=true;const revision=budgetRevision;$('refresh').disabled=true;try{const response=await fetch(hostedDashboard?snapshotEndpoint+(snapshotEndpoint.includes('?')?'&':'?')+'updated='+Date.now():snapshotEndpoint,{cache:'no-store'});if(!response.ok)throw Error('Data unavailable');const fresh=await response.json();if(revision!==budgetRevision)return;data=normalizeSeatZones(fresh);if(hostedDashboard){data.readOnly=true;data.finished=Date.now()>=new Date(data.tipoff).getTime();}const prior=$('section').value;const sections=[...new Set(data.listings.map(x=>x.section))].sort();$('section').replaceChildren(new Option('All tracked sections','all'),...sections.map(s=>new Option(`Section ${s}`,s)));$('section').value=sections.includes(prior)?prior:'all';render();}catch(error){$('health').textContent='Dashboard disconnected';$('notice').className='notice warning';$('notice').textContent='Cannot read the monitor data. Showing the previous display, which may be outdated. Refresh to retry.';}finally{busy=false;$('refresh').disabled=false;}}
+async function load(){
+  if(busy){reloadRequested=true;return;}if(savingBudgets||requestingCheck||budgetDrag)return;
+  busy=true;const revision=budgetRevision;$('refresh').disabled=true;
+  try{
+    let endpoint=hostedDashboard?snapshotEndpoint+(snapshotEndpoint.includes('?')?'&':'?')+'updated='+Date.now():snapshotEndpoint+(activeGameId?'?game='+encodeURIComponent(activeGameId):'');
+    const response=await fetch(endpoint,{cache:'no-store'});if(!response.ok)throw Error('Data unavailable');let fresh=await response.json();
+    if(hostedDashboard&&fresh.formatVersion===2){
+      const catalog=fresh, id=activeGameId||catalog.defaultGameId;
+      if(!catalog.games.some(game=>game.id===id))throw Error('This game is not in the shared watch list.');
+      if(id!==catalog.gameId){
+        const url=new URL('games/'+id+'.json',new URL(snapshotEndpoint,location.href));url.searchParams.set('updated',Date.now());
+        const selected=await fetch(url,{cache:'no-store'});if(!selected.ok)throw Error('This game snapshot is not available yet.');fresh=await selected.json();
+      }
+      if(fresh.gameId!==id)throw Error('The snapshot does not match the selected game. Refresh to retry.');
+      fresh.games=catalog.games;fresh.defaultGameId=catalog.defaultGameId;
+    }
+    else if(hostedDashboard&&activeGameId&&fresh.gameId!==activeGameId)throw Error('The shared game list is updating. Refresh shortly.');
+    if(revision!==budgetRevision)return;
+    data=normalizeSeatZones(fresh);activeGameId=data.gameId||activeGameId;
+    if(hostedDashboard){data.readOnly=true;data.finished=Date.now()>=new Date(data.tipoff).getTime();}
+    const prior=$('section').value, sections=[...new Set(data.listings.map(x=>x.section))].sort();
+    $('section').replaceChildren(new Option('All tracked sections','all'),...sections.map(s=>new Option(`Section ${s}`,s)));
+    $('section').value=sections.includes(prior)?prior:'all';render();
+  }catch(error){$('health').textContent='Dashboard disconnected';$('notice').className='notice warning';$('notice').textContent=error.message==='Data unavailable'?'Cannot read monitor data. Showing the previous display, which may be outdated. Refresh to retry.':error.message;}
+  finally{busy=false;$('refresh').disabled=false;if(reloadRequested){reloadRequested=false;queueMicrotask(load);}}
+}
 for(const id of ['section','rows','sort','deals','exceptional'])$(id).addEventListener('change',()=>{if(id==='section'||id==='rows')selectedKey=null;if(data)render();});
 function fillBudgets(){for(const [id,key]of [...budgetFields])$(id).value=data.limits[key];}
-function budgetButtons(){ const readOnly=hostedDashboard||data?.readOnly;$('save-budgets').hidden=readOnly;$('save-budgets').disabled=!budgetsDirty||savingBudgets||readOnly;$('cancel-budgets').hidden=!budgetsDirty||readOnly;$('cancel-budgets').disabled=savingBudgets;for(const id of budgetFields.map(([id])=>id))$(id).disabled=savingBudgets||readOnly;}
+function budgetButtons(){ const readOnly=hostedDashboard||data?.readOnly;$('game-picker').disabled=savingBudgets||budgetsDirty;$('add-watch').disabled=savingBudgets||budgetsDirty;$('save-defaults').hidden=readOnly;$('save-defaults').disabled=savingBudgets||budgetsDirty||!data?.gameId;if(budgetsDirty)$('watch-status').textContent='Save or cancel cap edits before switching games.';$('save-budgets').hidden=readOnly;$('save-budgets').disabled=!budgetsDirty||savingBudgets||readOnly;$('cancel-budgets').hidden=!budgetsDirty||readOnly;$('cancel-budgets').disabled=savingBudgets;for(const id of budgetFields.map(([id])=>id))$(id).disabled=savingBudgets||readOnly||!data;}
 for(const id of budgetFields.map(([id])=>id))$(id).addEventListener('input',()=>{markBudgetDirty();if(data)drawChart();});
 $('cancel-budgets').addEventListener('click',()=>{budgetsDirty=false;fillBudgets();budgetButtons();if(data)drawChart();$('budget-status').textContent='Changes canceled. Saved thresholds are unchanged.';});
 
@@ -219,12 +252,12 @@ function finishBudgetDrag(cancel){
 }
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&budgetDrag){event.preventDefault();event.stopPropagation();finishBudgetDrag(true);}},true);
 async function saveBudgets(onlyKey=null){
-  if(!data||hostedDashboard||data.readOnly||savingBudgets||budgetDrag||(!onlyKey&&!$('budget-form').reportValidity()))return;
+  if(!data||data.gameId&&data.gameId!==activeGameId||hostedDashboard||data.readOnly||savingBudgets||budgetDrag||(!onlyKey&&!$('budget-form').reportValidity()))return;
   const limits=onlyKey?{...data.limits,[onlyKey]:chartLimits()[onlyKey]}:Object.fromEntries(budgetFields.map(([id,key])=>[key,Number($(id).value)]));
   const otherDrafts=new Map(budgetFields.filter(([id,key])=>key!==onlyKey&&$(id).value!==String(data.limits[key])).map(([id,key])=>[key,$(id).value]));
   if(!Object.values(limits).every(x=>Number.isInteger(x)&&x>=0&&x<=10000)){$('budget-status').textContent='Enter whole-dollar amounts from $0 to $10,000.';return;}
   savingBudgets=true;budgetRevision++;budgetButtons();$('budget-status').textContent=onlyKey?`Saving ${data.zones[onlyKey]}…`:'Saving…';
-  try{const response=await fetch('/api/limits',{method:'POST',headers:{'Content-Type':'application/json','X-Dub-Watch':'dashboard'},body:JSON.stringify(onlyKey?{zone:onlyKey,value:limits[onlyKey]}:limits)});const result=await response.json();if(!response.ok)throw Error(result.error||'Could not save thresholds.');data.limits=result.limits;
+  try{const response=await fetch('/api/limits',{method:'POST',headers:postHeaders(),body:JSON.stringify(onlyKey?{zone:onlyKey,value:limits[onlyKey]}:limits)});const result=await response.json();if(!response.ok)throw Error(result.error||'Could not save thresholds.');data.limits=result.limits;
     for(const listing of data.listings){listing.limit=result.limits[listing.band];listing.withinCap=listing.price<=listing.limit;listing.qualifies=listing.withinCap&&(data.dealScoring?.mode==='automatic'?listing.exceptional:true);listing.alertCeiling=listing.dealTarget==null?null:Math.min(listing.dealTarget,listing.limit);}
     if(onlyKey){for(const [id,key]of budgetFields)$(id).value=otherDrafts.has(key)?otherDrafts.get(key):result.limits[key];budgetsDirty=budgetFields.some(([id,key])=>$(id).value!==String(result.limits[key]));}
     else budgetsDirty=false;
@@ -251,7 +284,7 @@ $('check-now').addEventListener('click',async()=>{
   if(!data||$('check-now').disabled)return;
   requestingCheck=true;budgetRevision++;renderCheckState();$('check-status').textContent='Requesting a fresh ticket check…';
   try{
-    const response=await fetch('/api/check',{method:'POST',headers:{'Content-Type':'application/json','X-Dub-Watch':'dashboard'},body:'{}'});
+    const response=await fetch('/api/check',{method:'POST',headers:postHeaders(),body:'{}'});
     const result=await response.json();if(!response.ok)throw Error(result.error||'Could not start the check.');
     data.runtime.checkRequested=result.status==='queued';data.runtime.checking=result.status==='checking';
   }catch(error){$('check-status').textContent=error.message||'Could not start the check. Please retry.';}
@@ -287,4 +320,58 @@ marketDialog.addEventListener('close',()=>{
   for(const {panel,marker}of marketPanels)marker.after(panel);
   document.body.classList.remove('market-expanded');marketOpener?.focus({preventScroll:true});
   window.scrollTo({top:marketScrollY,behavior:'instant'});
+});
+
+function renderWatches(){
+  const games=data.games||[], picker=$('game-picker'), prior=activeGameId;
+  picker.replaceChildren();
+  for(const status of ['watching','paused','finished']){
+    const matching=games.filter(game=>game.status===status);if(status==='finished')matching.reverse();if(!matching.length)continue;
+    const group=document.createElement('optgroup');group.label={watching:'Watching',paused:'Paused',finished:'Archive'}[status];
+    for(const game of matching){const date=new Date(game.tipoff).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'America/Los_Angeles'});group.append(new Option(`${game.title} | ${date}`,game.id));}
+    picker.append(group);
+  }
+  if(!games.length)picker.append(new Option(data.event,activeGameId||''));else picker.value=prior||data.gameId;
+  $('add-watch').hidden=hostedDashboard||data.readOnly||!data.gameId;
+  $('toggle-watch').hidden=hostedDashboard||data.readOnly||!data.gameId;
+  $('toggle-watch').textContent=data.watchEnabled===false?'Resume watch':'Pause watch';
+  $('toggle-watch').disabled=data.finished||savingBudgets||budgetsDirty;
+  if(!budgetsDirty)$('watch-status').textContent=data.finished?'Archived: history is preserved. Other active games continue.':data.watchEnabled===false?'Paused: automatic checks are off for this game.':`Checks adapt to tipoff: about every ${data.intervalMinutes} minutes for this game.`;
+  $('watch-list').replaceChildren();$('watch-count').textContent=`Game watches (${games.length})`;
+  for(const game of games){const button=el('button',undefined,'watch-row');button.type='button';button.dataset.watchId=game.id;button.setAttribute('aria-pressed',String(game.id===activeGameId));button.append(el('span',game.title),el('small',`${game.status} | ${new Date(game.tipoff).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZone:'America/Los_Angeles'})} Pacific | Last check: ${time(game.capturedAt)}`));button.addEventListener('click',()=>switchGame(game.id));$('watch-list').append(button);}
+  $('game-heading').textContent=data.finished?'ARCHIVED GAME':data.watchEnabled===false?'WATCH PAUSED':'WARRIORS HOME GAME';
+  $('game-matchup').textContent=data.event;
+  $('game-tipoff').textContent=new Date(data.tipoff).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZoneName:'short',timeZone:'America/Los_Angeles'})+' | '+data.venue;
+  $('game-date').textContent=new Date(data.tipoff).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric',timeZone:'America/Los_Angeles'});
+  document.title=data.event+' | Dub Watch';
+}
+function switchGame(id){
+  if(savingBudgets||budgetsDirty||budgetDrag||requestingCheck){$('watch-status').textContent=requestingCheck?'Wait for the check request before switching games.':'Save or cancel cap edits before switching games.';if(data)$('game-picker').value=data.gameId;return;}
+  activeGameId=id;budgetRevision++;data=null;selectedKey=null;selectedZone='all';hiddenChartZones.clear();
+  const url=new URL(location.href);url.searchParams.set('game',id);history.replaceState(null,'',url);
+  $('section').value='all';$('rows').value='all';$('listings').replaceChildren();$('chart').replaceChildren();$('zone-cards').replaceChildren();$('check-status').textContent='';$('notice').textContent='Loading selected game…';$('check-now').disabled=true;budgetButtons();load();
+}
+$('game-picker').addEventListener('change',event=>switchGame(event.target.value));
+$('add-watch').addEventListener('click',()=>{if(!hostedDashboard&&!data?.readOnly)$('add-watch-dialog').showModal();});
+$('close-add-watch').addEventListener('click',()=>$('add-watch-dialog').close());
+$('watch-url').addEventListener('input',()=>{
+  const match=$('watch-url').value.match(/\/([^/]+)\/(\d{2})-(\d{2})-(\d{4})-san-francisco-ca-chase-center\/events\//i);
+  if(match){$('watch-tipoff').value=`${match[4]}-${match[2]}-${match[3]}T19:00`;if(!$('watch-title').value)$('watch-title').value=match[1].replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());}
+});
+$('add-watch-form').addEventListener('submit',async event=>{
+  event.preventDefault();if(hostedDashboard||data?.readOnly)return;
+  $('submit-watch').disabled=true;$('add-watch-status').textContent='Adding game…';
+  try{const response=await fetch('/api/watches',{method:'POST',headers:postHeaders(),body:JSON.stringify({url:$('watch-url').value,title:$('watch-title').value,tipoffPacific:$('watch-tipoff').value})});const result=await response.json();if(!response.ok)throw Error(result.error||'Could not add this watch.');$('add-watch-dialog').close();$('add-watch-form').reset();$('add-watch-status').textContent='';switchGame(result.gameId);}
+  catch(error){$('add-watch-status').textContent=error.message;}finally{$('submit-watch').disabled=false;}
+});
+$('toggle-watch').addEventListener('click',async()=>{
+  if(!data||hostedDashboard||data.readOnly)return;
+  $('toggle-watch').disabled=true;
+  try{const response=await fetch('/api/watch-state',{method:'POST',headers:postHeaders(),body:JSON.stringify({enabled:data.watchEnabled===false})});const result=await response.json();if(!response.ok)throw Error(result.error);await load();}
+  catch(error){$('watch-status').textContent=error.message;$('toggle-watch').disabled=false;}
+});
+$('save-defaults').addEventListener('click',async()=>{
+  if(!data||hostedDashboard||data.readOnly)return;
+  try{const response=await fetch('/api/defaults',{method:'POST',headers:postHeaders(),body:'{}'});const result=await response.json();if(!response.ok)throw Error(result.error);$('budget-status').textContent='Saved as defaults for future watches. Existing game caps are unchanged.';}
+  catch(error){$('budget-status').textContent=error.message;}
 });
