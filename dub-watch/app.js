@@ -31,6 +31,7 @@ function markBudgetDirty(){budgetsDirty=true;$('budget-status').textContent='Uns
 function setBudgetDraft(key,value){$(budgetFields.find(([,band])=>band===key)[0]).value=value;markBudgetDirty();}
 function matchesRow(x){return $('rows').value==='all'||(typeof x.row==='number'&&x.row<=Number($('rows').value));}
 function inZone(x){return selectedZone==='all'||x.band===selectedZone;}
+const cadence = minutes => minutes>=60?`${minutes/60} ${minutes===60?'hour':'hours'}`:`${minutes} minutes`;
 const money = n => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(n);
 const time = t => t?new Date(t).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Los_Angeles'}):'—';
 function el(tag, text, cls) {const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;}
@@ -53,7 +54,7 @@ function render() {
   const workerError=standalone&&(!runtime.processAlive||runtime.state==='error'||runtime.state==='warning');
   $('health').textContent=data.finished?'Monitoring window ended':workerError?'Standalone monitor needs attention':standalone?'Standalone monitor running':stale?'Browser data needs a refresh':'Recent browser observation';
   $('notice').className='notice'+(stale||workerError?' warning':'');
-  $('notice').textContent=data.finished?'Tipoff cutoff reached. Showing the last recorded snapshot.':stale?`This snapshot is over ${Math.round(data.maxAgeSeconds/60)} minutes old. Displayed listings may be outdated; check the standalone monitor.`:`Snapshot from ${time(data.capturedAt)} Pacific. Browser checks are scheduled every ${data.intervalMinutes} minutes; availability can change between checks.`;
+  $('notice').textContent=data.finished?'Tipoff cutoff reached. Showing the last recorded snapshot.':stale?`This snapshot is over ${Math.round(data.maxAgeSeconds/60)} minutes old. Displayed listings may be outdated; check the standalone monitor.`:`Snapshot from ${time(data.capturedAt)} Pacific. Browser checks are scheduled every ${cadence(data.intervalMinutes)}; availability can change between checks.`;
   if(workerError&&!data.finished)$('notice').textContent=!runtime.processAlive?'Standalone worker is not running. Start it with start-monitor.ps1. Displaying the last saved ticket data.':`The last browser check needs attention: ${runtime.error||'verification incomplete'}. The worker will retry; displayed prices may be outdated.`;
   else if(standalone&&stale&&!data.finished)$('notice').textContent='The last successful browser snapshot is over 10 minutes old. The worker is running, but displayed listings may be outdated.';
   if(!data.capturedAt)$('notice').textContent='No ticket check recorded for this game yet. Its prices and deal targets will start learning after its first check.';
@@ -68,8 +69,8 @@ function render() {
   if(data.watchEnabled===false&&!data.finished){$('health').textContent='Watch paused';$('notice').textContent='This watch is paused. Showing its last saved prices; automatic checks resume when the owner restarts this watch.';}
   if(!budgetsDirty&&!savingBudgets)fillBudgets();
   budgetButtons();
-  $('monitor-description').textContent=standalone?`Windows notifications · checks every ${data.intervalMinutes} minutes until tipoff. No AI tokens. Keep this computer awake and online; Codex can be closed.`:`Alerts in Codex · checks every ${data.intervalMinutes} minutes until tipoff. Keep Codex open and this computer awake.`;
-  if(data.readOnly)$('monitor-description').textContent=`The home computer checks tickets about every ${data.intervalMinutes} minutes and uploads snapshots here. Monitoring and Windows notifications run on that computer.`;
+  $('monitor-description').textContent=standalone?`Windows notifications · checks every ${cadence(data.intervalMinutes)} until tipoff. Five-minute checks only on game day; overnight checks at least 6 hours apart (11 p.m.–8 a.m. Pacific). No AI tokens. Keep this computer awake and online; Codex can be closed.`:`Alerts in Codex · checks every ${cadence(data.intervalMinutes)} until tipoff. Keep Codex open and this computer awake.`;
+  if(data.readOnly)$('monitor-description').textContent=`The home computer checks tickets about every ${cadence(data.intervalMinutes)} and uploads snapshots here. Monitoring and Windows notifications run on that computer.`;
   $('next-check').textContent=standalone&&runtime.nextCheckAt&&!data.finished?`Next check around ${time(runtime.nextCheckAt)} Pacific.`:'';
   $('sharing-status').replaceChildren();
   if(!data.readOnly&&data.sharing?.url){const link=el('a','Open shared dashboard ↗');link.href=data.sharing.url+(activeGameId?'?game='+encodeURIComponent(activeGameId):'');link.target='_blank';link.rel='noopener noreferrer';$('sharing-status').append(link,el('span',data.sharing.state==='error'?' · Upload failed; monitoring continues locally.':` · Last upload ${time(data.sharing.publishedAt)} Pacific`));}
@@ -339,7 +340,7 @@ function renderWatches(){
   $('toggle-watch').hidden=hostedDashboard||data.readOnly||!data.gameId;
   $('toggle-watch').textContent=data.watchEnabled===false?'Resume watch':'Pause watch';
   $('toggle-watch').disabled=data.finished||savingBudgets||budgetsDirty;
-  if(!budgetsDirty)$('watch-status').textContent=data.finished?'Archived: history is preserved. Other active games continue.':data.watchEnabled===false?'Paused: automatic checks are off for this game.':`Checks adapt to tipoff: about every ${data.intervalMinutes} minutes for this game.`;
+  if(!budgetsDirty)$('watch-status').textContent=data.finished?'Archived: history is preserved. Other active games continue.':data.watchEnabled===false?'Paused: automatic checks are off for this game.':`Checks adapt to game day: about every ${cadence(data.intervalMinutes)}. Overnight checks are at least 6 hours apart (11 p.m.–8 a.m. Pacific).`;
   $('watch-list').replaceChildren();$('watch-count').textContent=`Game watches (${games.length})`;
   for(const game of games){const button=el('button',undefined,'watch-row');button.type='button';button.dataset.watchId=game.id;button.setAttribute('aria-pressed',String(game.id===activeGameId));button.append(el('span',game.title),el('small',`${game.status} | ${new Date(game.tipoff).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZone:'America/Los_Angeles'})} Pacific | Last check: ${time(game.capturedAt)}`));button.addEventListener('click',()=>switchGame(game.id));$('watch-list').append(button);}
   $('game-heading').textContent=data.finished?'ARCHIVED GAME':data.watchEnabled===false?'WATCH PAUSED':'WARRIORS HOME GAME';
