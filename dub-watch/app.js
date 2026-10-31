@@ -32,16 +32,16 @@ function setBudgetDraft(key,value){$(budgetFields.find(([,band])=>band===key)[0]
 function matchesRow(x){return $('rows').value==='all'||(typeof x.row==='number'&&x.row<=Number($('rows').value));}
 function inZone(x){return selectedZone==='all'||x.band===selectedZone;}
 const money = n => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(n);
-const time = t => t?new Date(t).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Los_Angeles'}):'â€”';
+const time = t => t?new Date(t).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Los_Angeles'}):'—';
 function el(tag, text, cls) {const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;}
 function selectedRows() {return data.listings.filter(x=>inZone(x)&&($('section').value==='all'||x.section===$('section').value)&&matchesRow(x)&&(!$('deals').checked||(x.withinCap??x.price<=x.limit))&&(!$('exceptional').checked||x.exceptional));}
 function render() {
   renderWatches();
   const automatic=data.dealScoring?.mode==='automatic';
   const all=data.listings, lower=all.filter(x=>x.level==='Lower'), first=lower.filter(x=>x.row<=5).sort((a,b)=>a.price-b.price)[0], low=lower[0];
-  $('low').textContent=low?money(low.price):'â€”';$('low-seat').textContent=low?`Section ${low.section} Â· Row ${low.row}`:'No seated inventory captured';
-  $('front').textContent=first?money(first.price):'â€”';$('front-seat').textContent=first?`Section ${first.section} Â· Row ${first.row}`:'No front-row inventory captured';
-  $('qualifying').textContent=all.filter(x=>x.qualifies).length;$('last').textContent=data.capturedAt?time(data.capturedAt):'â€”';$('capture-count').textContent=`${all.length} tracked listings observed`;
+  $('low').textContent=low?money(low.price):'—';$('low-seat').textContent=low?`Section ${low.section} · Row ${low.row}`:'No seated inventory captured';
+  $('front').textContent=first?money(first.price):'—';$('front-seat').textContent=first?`Section ${first.section} · Row ${first.row}`:'No front-row inventory captured';
+  $('qualifying').textContent=all.filter(x=>x.qualifies).length;$('last').textContent=data.capturedAt?time(data.capturedAt):'—';$('capture-count').textContent=`${all.length} tracked listings observed`;
   $('qualifying-label').textContent=automatic?'AUTOMATIC ALERT MATCHES':'WITHIN YOUR BUDGETS';
   $('budget-panel-title').textContent=automatic?'Spending caps':'Your deal zone';
   $('exceptional-filter').hidden=!automatic;$('deal-policy').hidden=!automatic;
@@ -59,7 +59,7 @@ function render() {
   if(!data.capturedAt)$('notice').textContent='No ticket check recorded for this game yet. Its prices and deal targets will start learning after its first check.';
   if(data.readOnly){
     $('health').textContent=data.finished?'Monitoring window ended':stale?'Shared prices are outdated':'Shared dashboard';
-    $('notice').textContent=data.finished?'The monitoring window has ended. Showing the last shared snapshot.':stale?`Last ticket check ${time(data.capturedAt)} Pacific. These prices are over ${Math.round(data.maxAgeSeconds/60)} minutes old; the home computer may be offline.`:`Ticket check ${time(data.capturedAt)} Pacific Â· Uploaded ${time(data.publishedAt)} Pacific. Availability can change between checks.`;
+    $('notice').textContent=data.finished?'The monitoring window has ended. Showing the last shared snapshot.':stale?`Last ticket check ${time(data.capturedAt)} Pacific. These prices are over ${Math.round(data.maxAgeSeconds/60)} minutes old; the home computer may be offline.`:`Ticket check ${time(data.capturedAt)} Pacific · Uploaded ${time(data.publishedAt)} Pacific. Availability can change between checks.`;
     $('check-now').hidden=true;$('budget-status').textContent='View-only. Budgets are managed on the computer running the monitor.';
     budgetButtons();
   }
@@ -68,28 +68,28 @@ function render() {
   if(data.watchEnabled===false&&!data.finished){$('health').textContent='Watch paused';$('notice').textContent='This watch is paused. Showing its last saved prices; automatic checks resume when the owner restarts this watch.';}
   if(!budgetsDirty&&!savingBudgets)fillBudgets();
   budgetButtons();
-  $('monitor-description').textContent=standalone?`Windows notifications Â· checks every ${data.intervalMinutes} minutes until tipoff. No AI tokens. Keep this computer awake and online; Codex can be closed.`:`Alerts in Codex Â· checks every ${data.intervalMinutes} minutes until tipoff. Keep Codex open and this computer awake.`;
+  $('monitor-description').textContent=standalone?`Windows notifications · checks every ${data.intervalMinutes} minutes until tipoff. No AI tokens. Keep this computer awake and online; Codex can be closed.`:`Alerts in Codex · checks every ${data.intervalMinutes} minutes until tipoff. Keep Codex open and this computer awake.`;
   if(data.readOnly)$('monitor-description').textContent=`The home computer checks tickets about every ${data.intervalMinutes} minutes and uploads snapshots here. Monitoring and Windows notifications run on that computer.`;
   $('next-check').textContent=standalone&&runtime.nextCheckAt&&!data.finished?`Next check around ${time(runtime.nextCheckAt)} Pacific.`:'';
   $('sharing-status').replaceChildren();
-  if(!data.readOnly&&data.sharing?.url){const link=el('a','Open shared dashboard â†—');link.href=data.sharing.url+(activeGameId?'?game='+encodeURIComponent(activeGameId):'');link.target='_blank';link.rel='noopener noreferrer';$('sharing-status').append(link,el('span',data.sharing.state==='error'?' Â· Upload failed; monitoring continues locally.':` Â· Last upload ${time(data.sharing.publishedAt)} Pacific`));}
-  if(!data.readOnly&&data.ownerAccess?.enabled){const link=el('a','Private owner dashboard â†—');link.href=data.ownerAccess.url+(activeGameId?'?game='+encodeURIComponent(activeGameId):'');link.target='_blank';link.rel='noopener noreferrer';$('sharing-status').append(el('span',' Â· '),link);}
+  if(!data.readOnly&&data.sharing?.url){const link=el('a','Open shared dashboard ↗');link.href=data.sharing.url+(activeGameId?'?game='+encodeURIComponent(activeGameId):'');link.target='_blank';link.rel='noopener noreferrer';$('sharing-status').append(link,el('span',data.sharing.state==='error'?' · Upload failed; monitoring continues locally.':` · Last upload ${time(data.sharing.publishedAt)} Pacific`));}
+  if(!data.readOnly&&data.ownerAccess?.enabled){const link=el('a','Private owner dashboard ↗');link.href=data.ownerAccess.url+(activeGameId?'?game='+encodeURIComponent(activeGameId):'');link.target='_blank';link.rel='noopener noreferrer';$('sharing-status').append(el('span',' · '),link);}
   const rows=selectedRows(), sort=$('sort').value;
   rows.sort((a,b)=>sort==='price'?a.price-b.price:sort==='row'?String(a.row).localeCompare(String(b.row),'en',{numeric:true})||a.price-b.price:sort==='drop'?a.change-b.change||a.price-b.price:sort==='deal'?(b.discountPercent??-Infinity)-(a.discountPercent??-Infinity)||a.price-b.price:Number(b.qualifies)-Number(a.qualifies)||Number(!!b.exceptional)-Number(!!a.exceptional)||Object.keys(data.zones).indexOf(a.band)-Object.keys(data.zones).indexOf(b.band)||a.price-b.price);
   $('listings').replaceChildren();
   for(const x of rows){const tr=el('tr',undefined,`${x.qualifies?'qualified ':''}${selectedKey===x.key?'selected':''}`);tr.tabIndex=0;tr.setAttribute('aria-label',`Show price history for section ${x.section}, row ${x.row}`);
     tr.dataset.seatKey=x.key;
-    const seat=el('td');seat.append(el('b',`${x.level} ${x.section}`),el('small',`Row ${x.row}${x.row<=5?' Â· FRONT ROWS':''}`));tr.append(seat);
-    const price=el('td');price.append(el('span',money(x.price),'price'),el('small','1 ticket Â· includes fees'));tr.append(price);
-    const change=el('td',x.change===0?'â€”':`${x.change>0?'+':'âˆ’'}${money(Math.abs(x.change))}`,x.change<0?'drop':x.change>0?'rise':'flat');tr.append(change);
+    const seat=el('td');seat.append(el('b',`${x.level} ${x.section}`),el('small',`Row ${x.row}${x.row<=5?' · FRONT ROWS':''}`));tr.append(seat);
+    const price=el('td');price.append(el('span',money(x.price),'price'),el('small','1 ticket · includes fees'));tr.append(price);
+    const change=el('td',x.change===0?'—':`${x.change>0?'+':'−'}${money(Math.abs(x.change))}`,x.change<0?'drop':x.change>0?'rise':'flat');tr.append(change);
     const status=el('td');status.append(el('span',x.qualifies?'Within budget':x.zone,`badge ${x.qualifies?'good':x.row<=5?'front':''}`));if(x.verifiedAt)status.append(el('small',`Verified ${time(x.verifiedAt)}`));else status.append(el('small','From listing page'));tr.append(status);
     if(automatic){
-      status.replaceChildren(el('span',x.exceptional?(x.withinCap?'Exceptional Â· alert match':'Exceptional Â· over cap'):x.confidence==='insufficient'?'Learning':'Watching',`badge ${x.exceptional?'good':''}`));
-      status.append(el('small',x.dealTarget==null?'No automatic target yet':`Auto target ${money(x.dealTarget)} Â· ${Math.abs(x.discountPercent).toFixed(0)}% ${x.discountPercent>=0?'below':'above'} reference`));
-      status.append(el('small',x.comparisonBasis==='same-row history'?`${x.historySamples} spaced checks Â· same section & row`:x.comparisonBasis==='nearby-row offers'?`${x.comparableCount} offers Â· same section, nearby rows`:'Waiting for comparable offers or same-row history'));
+      status.replaceChildren(el('span',x.exceptional?(x.withinCap?'Exceptional · alert match':'Exceptional · over cap'):x.confidence==='insufficient'?'Learning':'Watching',`badge ${x.exceptional?'good':''}`));
+      status.append(el('small',x.dealTarget==null?'No automatic target yet':`Auto target ${money(x.dealTarget)} · ${Math.abs(x.discountPercent).toFixed(0)}% ${x.discountPercent>=0?'below':'above'} reference`));
+      status.append(el('small',x.comparisonBasis==='same-row history'?`${x.historySamples} spaced checks · same section & row`:x.comparisonBasis==='nearby-row offers'?`${x.comparableCount} offers · same section, nearby rows`:'Waiting for comparable offers or same-row history'));
       if(x.referencePrice!=null)status.title=`Asking-price reference ${money(x.referencePrice)}; alert ceiling ${money(x.alertCeiling)} including your spending cap. ${x.confidence} confidence. Not a sold-price estimate.`;
     }
-    const action=el('td'), a=el('a','View â†—','ticket-link');a.href=x.url;a.target='_blank';a.rel='noopener noreferrer';a.setAttribute('aria-label',`View section ${x.section} row ${x.row} on Gametime`);a.addEventListener('click',e=>e.stopPropagation());action.append(a);tr.append(action);
+    const action=el('td'), a=el('a','View ↗','ticket-link');a.href=x.url;a.target='_blank';a.rel='noopener noreferrer';a.setAttribute('aria-label',`View section ${x.section} row ${x.row} on Gametime`);a.addEventListener('click',e=>e.stopPropagation());action.append(a);tr.append(action);
     const choose=()=>{selectedKey=x.key;render();};tr.addEventListener('click',choose);tr.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose();}});$('listings').append(tr);
   }
   $('empty').hidden=rows.length!==0;$('result-count').textContent=`${rows.length} listings`;drawChart();
@@ -105,7 +105,7 @@ function drawChart(){
     const values={};for(const key of zones){const prices=rows.filter(x=>x.band===key).map(x=>x.price);values[key]=prices.length?Math.min(...prices):null;}
     return {at:p.at,...values};
   });
-  $('chart-subtitle').textContent=selectedKey?`Section ${selectedKey.split(':').at(-2)} Â· Row ${selectedKey.split(':').at(-1)}`:section==='all'?(selectedZone==='all'?'Cheapest tracked tickets':data.zones[selectedZone]):`Cheapest observed in Section ${section}`;
+  $('chart-subtitle').textContent=selectedKey?`Section ${selectedKey.split(':').at(-2)} · Row ${selectedKey.split(':').at(-1)}`:section==='all'?(selectedZone==='all'?'Cheapest tracked tickets':data.zones[selectedZone]):`Cheapest observed in Section ${section}`;
   $('clear-chart').hidden=!selectedKey;const target=$('chart');target.replaceChildren();
   $('chart-legend').replaceChildren();
   for(const key of zones){
@@ -115,12 +115,12 @@ function drawChart(){
     const swatch=el('i');swatch.style.background=zoneColors[key];
     const copy=el('div',undefined,'chart-legend-copy'), gap=last==null?null:last-limits[key];
     const distance=gap===null?'No current offer':gap===0?'At budget':`${money(Math.abs(gap))} ${gap>0?'over':'below'} budget`;
-    copy.append(el('span',data.zones[key]),el('small',`${automatic?'Cap':'Budget'} ${money(limits[key])} Â· ${distance}`,'chart-budget-summary'+(gap!==null&&gap<=0?' within-budget':'')));
-    button.append(swatch,copy,el('strong',last==null?'â€”':money(last)));
+    copy.append(el('span',data.zones[key]),el('small',`${automatic?'Cap':'Budget'} ${money(limits[key])} · ${distance}`,'chart-budget-summary'+(gap!==null&&gap<=0?' within-budget':'')));
+    button.append(swatch,copy,el('strong',last==null?'—':money(last)));
     button.addEventListener('click',()=>{if(hiddenChartZones.has(key))hiddenChartZones.delete(key);else hiddenChartZones.add(key);drawChart();});
     $('chart-legend').append(button);
   }
-  $('chart-legend').append(el('p',`Solid = asking prices Â· Dashed = ${budgetsDirty?'unsaved cap preview':automatic?'spending caps':'saved budgets'}.${automatic?' Select a table row to see its automatic target.':''}${data.readOnly?' View-only shared snapshot.':' Drag a colored handle; release to save that zone.'}`,'chart-line-key'));
+  $('chart-legend').append(el('p',`Solid = asking prices · Dashed = ${budgetsDirty?'unsaved cap preview':automatic?'spending caps':'saved budgets'}.${automatic?' Select a table row to see its automatic target.':''}${data.readOnly?' View-only shared snapshot.':' Drag a colored handle; release to save that zone.'}`,'chart-line-key'));
   const active=zones.filter(key=>!hiddenChartZones.has(key)), valid=points.flatMap(p=>active.map(key=>p[key])).filter(x=>x!==null);
   if(!valid.length){target.append(el('p',active.length?'No matching price history yet.':'Select a zone in the legend to show its price history.','footnote'));$('chart-detail').textContent='Each line tracks the cheapest observed ticket in its zone.';return;}
   const ns='http://www.w3.org/2000/svg', svg=document.createElementNS(ns,'svg');svg.setAttribute('viewBox','0 0 360 240');svg.setAttribute('role','group');svg.setAttribute('aria-label','Cheapest all-in ticket prices over time by seat zone');
@@ -137,7 +137,7 @@ function drawChart(){
     const line=node('line',{x1:49,y1:Y(autoTarget),x2:337,y2:Y(autoTarget),stroke:zoneColors[selectedOffer.band],'stroke-width':2.5,'stroke-dasharray':'2 4','data-auto-target':autoTarget,tabindex:0,role:'img','aria-label':label});
     const title=document.createElementNS(ns,'title');title.textContent=label;line.append(title);
     line.addEventListener('focus',()=>{$('chart-detail').textContent=label;});
-    $('chart-legend').querySelector('.chart-line-key').textContent=`Solid = asking prices Â· Dashed = spending cap Â· Dotted = current automatic target ${money(autoTarget)}. This target adapts to comparable asking prices.`;
+    $('chart-legend').querySelector('.chart-line-key').textContent=`Solid = asking prices · Dashed = spending cap · Dotted = current automatic target ${money(autoTarget)}. This target adapts to comparable asking prices.`;
   }
   const budgetControls=[];
   for(const key of budgetZones){
@@ -159,10 +159,10 @@ function drawChart(){
       grip.setAttribute('aria-valuenow',value);grip.setAttribute('aria-valuetext',`${money(value)}, unsaved`);
       const last=points.at(-1)?.[key], gap=last==null?null:last-value;
       const summary=$('chart-legend').querySelector(`[data-chart-zone="${key}"] small`);
-      summary.textContent=`Budget ${money(value)} Â· ${gap===null?'No current offer':gap===0?'At budget':`${money(Math.abs(gap))} ${gap>0?'over':'below'} budget`}`;
+      summary.textContent=`Budget ${money(value)} · ${gap===null?'No current offer':gap===0?'At budget':`${money(Math.abs(gap))} ${gap>0?'over':'below'} budget`}`;
       summary.classList.toggle('within-budget',gap!==null&&gap<=0);
       $('chart-legend').querySelector('.chart-line-key').textContent='Release the handle to save this zone automatically.';
-      $('chart-detail').textContent=`${data.zones[key]} budget: ${money(value)} Â· Release to save`;
+      $('chart-detail').textContent=`${data.zones[key]} budget: ${money(value)} · Release to save`;
       $('budget-status').textContent=`Release to save ${data.zones[key]} at ${money(value)}. Escape cancels this drag.`;
     };
     const start=event=>{
@@ -189,7 +189,7 @@ function drawChart(){
     for(const p of points){
       if(p[key]===null){flush();continue;}
       segment.push(`${X(p)},${Y(p[key])}`);
-      const label=`${time(p.at)} Â· ${data.zones[key]}: ${money(p[key])} including fees`;
+      const label=`${time(p.at)} · ${data.zones[key]}: ${money(p[key])} including fees`;
       const dot=node('circle',{cx:X(p),cy:Y(p[key]),r:3.5,fill:color,tabindex:0,role:'img','aria-label':label,'data-zone':key});
       const title=document.createElementNS(ns,'title');title.textContent=label;dot.append(title);
       for(const event of ['pointerenter','focus','click'])dot.addEventListener(event,()=>{$('chart-detail').textContent=label;});
@@ -257,7 +257,7 @@ async function saveBudgets(onlyKey=null){
   const limits=onlyKey?{...data.limits,[onlyKey]:chartLimits()[onlyKey]}:Object.fromEntries(budgetFields.map(([id,key])=>[key,Number($(id).value)]));
   const otherDrafts=new Map(budgetFields.filter(([id,key])=>key!==onlyKey&&$(id).value!==String(data.limits[key])).map(([id,key])=>[key,$(id).value]));
   if(!Object.values(limits).every(x=>Number.isInteger(x)&&x>=0&&x<=10000)){$('budget-status').textContent='Enter whole-dollar amounts from $0 to $10,000.';return;}
-  savingBudgets=true;budgetRevision++;budgetButtons();$('budget-status').textContent=onlyKey?`Saving ${data.zones[onlyKey]}â€¦`:'Savingâ€¦';
+  savingBudgets=true;budgetRevision++;budgetButtons();$('budget-status').textContent=onlyKey?`Saving ${data.zones[onlyKey]}…`:'Saving…';
   try{const response=await fetch('/api/limits',{method:'POST',headers:postHeaders(),body:JSON.stringify(onlyKey?{zone:onlyKey,value:limits[onlyKey]}:limits)});const result=await response.json();if(!response.ok)throw Error(result.error||'Could not save thresholds.');data.limits=result.limits;
     for(const listing of data.listings){listing.limit=result.limits[listing.band];listing.withinCap=listing.price<=listing.limit;listing.qualifies=listing.withinCap&&(data.dealScoring?.mode==='automatic'?listing.exceptional:true);listing.alertCeiling=listing.dealTarget==null?null:Math.min(listing.dealTarget,listing.limit);}
     if(onlyKey){for(const [id,key]of budgetFields)$(id).value=otherDrafts.has(key)?otherDrafts.get(key):result.limits[key];budgetsDirty=budgetFields.some(([id,key])=>$(id).value!==String(result.limits[key]));}
@@ -272,9 +272,9 @@ $('clear-chart').addEventListener('click',()=>{selectedKey=null;render();});$('r
 function renderCheckState(){
   const runtime=data.runtime||{}, running=runtime.checking||runtime.checkRequested;
   $('check-now').disabled=requestingCheck||running||data.finished||data.runner!=='standalone'||!runtime.processAlive;
-  $('check-now').textContent=running||requestingCheck?'Checkingâ€¦':'Check now';
+  $('check-now').textContent=running||requestingCheck?'Checking…':'Check now';
   if(running){
-    $('check-status').textContent=runtime.checking?'Checking live ticket prices and verifying new dealsâ€¦':'Check requested. Starting the ticket browserâ€¦';
+    $('check-status').textContent=runtime.checking?'Checking live ticket prices and verifying new deals…':'Check requested. Starting the ticket browser…';
     if(!checkPoll)checkPoll=setInterval(load,2000);
   }else if(checkPoll){
     clearInterval(checkPoll);checkPoll=null;
@@ -283,7 +283,7 @@ function renderCheckState(){
 }
 $('check-now').addEventListener('click',async()=>{
   if(!data||$('check-now').disabled)return;
-  requestingCheck=true;budgetRevision++;renderCheckState();$('check-status').textContent='Requesting a fresh ticket checkâ€¦';
+  requestingCheck=true;budgetRevision++;renderCheckState();$('check-status').textContent='Requesting a fresh ticket check…';
   try{
     const response=await fetch('/api/check',{method:'POST',headers:postHeaders(),body:'{}'});
     const result=await response.json();if(!response.ok)throw Error(result.error||'Could not start the check.');
@@ -352,7 +352,7 @@ function switchGame(id){
   if(savingBudgets||budgetsDirty||budgetDrag||requestingCheck){$('watch-status').textContent=requestingCheck?'Wait for the check request before switching games.':'Save or cancel cap edits before switching games.';if(data)$('game-picker').value=data.gameId;return;}
   activeGameId=id;budgetRevision++;data=null;selectedKey=null;selectedZone='all';hiddenChartZones.clear();
   const url=new URL(location.href);url.searchParams.set('game',id);history.replaceState(null,'',url);
-  $('section').value='all';$('rows').value='all';$('listings').replaceChildren();$('chart').replaceChildren();$('zone-cards').replaceChildren();$('check-status').textContent='';$('notice').textContent='Loading selected gameâ€¦';$('check-now').disabled=true;budgetButtons();load();
+  $('section').value='all';$('rows').value='all';$('listings').replaceChildren();$('chart').replaceChildren();$('zone-cards').replaceChildren();$('check-status').textContent='';$('notice').textContent='Loading selected game…';$('check-now').disabled=true;budgetButtons();load();
 }
 $('game-picker').addEventListener('change',event=>switchGame(event.target.value));
 $('add-watch').addEventListener('click',()=>{if(!hostedDashboard&&!data?.readOnly)$('add-watch-dialog').showModal();});
@@ -386,7 +386,7 @@ $('watch-url').addEventListener('input',()=>{
 });
 $('add-watch-form').addEventListener('submit',async event=>{
   event.preventDefault();if(hostedDashboard||data?.readOnly||eventLookupBusy)return;
-  $('submit-watch').disabled=true;$('add-watch-status').textContent='Adding gameâ€¦';
+  $('submit-watch').disabled=true;$('add-watch-status').textContent='Adding game…';
   try{const response=await fetch('/api/watches',{method:'POST',headers:postHeaders(),body:JSON.stringify({url:$('watch-url').value,title:$('watch-title').value,tipoffPacific:$('watch-tipoff').value})});const result=await response.json();if(!response.ok)throw Error(result.error||'Could not add this watch.');$('add-watch-dialog').close();$('add-watch-form').reset();$('add-watch-status').textContent='';switchGame(result.gameId);}
   catch(error){$('add-watch-status').textContent=error.message;}finally{$('submit-watch').disabled=false;}
 });
