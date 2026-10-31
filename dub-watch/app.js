@@ -2,6 +2,7 @@ const $ = id => document.getElementById(id);
 const hostedDashboard=document.documentElement.dataset.mode==='public';
 const snapshotEndpoint=document.documentElement.dataset.snapshotUrl||'/api/data';
 let data, selectedKey = null, busy = false, budgetsDirty = false, savingBudgets = false, budgetRevision = 0;
+let upcomingGames=[],upcomingFetchedAt=null,upcomingLoaded=false,upcomingBusy=false,upcomingError='',addingUpcoming=null;
 let activeGameId=new URLSearchParams(location.search).get('game'), reloadRequested=false;
 function postHeaders(){return {'Content-Type':'application/json','X-Dub-Watch':'dashboard',...(activeGameId?{'X-Dub-Watch-Game':activeGameId}:{})};}
 let requestingCheck = false, checkPoll = null, selectedZone = 'all';
@@ -224,7 +225,7 @@ async function load(){
         const selected=await fetch(url,{cache:'no-store'});if(!selected.ok)throw Error('This game snapshot is not available yet.');fresh=await selected.json();
       }
       if(fresh.gameId!==id)throw Error('The snapshot does not match the selected game. Refresh to retry.');
-      fresh.games=catalog.games;fresh.defaultGameId=catalog.defaultGameId;
+      fresh.games=catalog.games;fresh.defaultGameId=catalog.defaultGameId;fresh.upcoming=catalog.upcoming;
     }
     else if(hostedDashboard&&activeGameId&&fresh.gameId!==activeGameId)throw Error('The shared game list is updating. Refresh shortly.');
     if(revision!==budgetRevision)return;
@@ -238,7 +239,7 @@ async function load(){
 }
 for(const id of ['section','rows','sort','deals','exceptional'])$(id).addEventListener('change',()=>{if(id==='section'||id==='rows')selectedKey=null;if(data)render();});
 function fillBudgets(){for(const [id,key]of [...budgetFields])$(id).value=data.limits[key];}
-function budgetButtons(){ const readOnly=hostedDashboard||data?.readOnly;$('game-picker').disabled=savingBudgets||budgetsDirty;$('add-watch').disabled=savingBudgets||budgetsDirty;$('save-defaults').hidden=readOnly;$('save-defaults').disabled=savingBudgets||budgetsDirty||!data?.gameId;if(budgetsDirty)$('watch-status').textContent='Save or cancel cap edits before switching games.';$('save-budgets').hidden=readOnly;$('save-budgets').disabled=!budgetsDirty||savingBudgets||readOnly;$('cancel-budgets').hidden=!budgetsDirty||readOnly;$('cancel-budgets').disabled=savingBudgets;for(const id of budgetFields.map(([id])=>id))$(id).disabled=savingBudgets||readOnly||!data;}
+function budgetButtons(){ if(data)renderUpcoming();const readOnly=hostedDashboard||data?.readOnly;$('game-picker').disabled=savingBudgets||budgetsDirty;$('add-watch').disabled=savingBudgets||budgetsDirty;$('save-defaults').hidden=readOnly;$('save-defaults').disabled=savingBudgets||budgetsDirty||!data?.gameId;if(budgetsDirty)$('watch-status').textContent='Save or cancel cap edits before switching games.';$('save-budgets').hidden=readOnly;$('save-budgets').disabled=!budgetsDirty||savingBudgets||readOnly;$('cancel-budgets').hidden=!budgetsDirty||readOnly;$('cancel-budgets').disabled=savingBudgets;for(const id of budgetFields.map(([id])=>id))$(id).disabled=savingBudgets||readOnly||!data;}
 for(const id of budgetFields.map(([id])=>id))$(id).addEventListener('input',()=>{markBudgetDirty();if(data)drawChart();});
 $('cancel-budgets').addEventListener('click',()=>{budgetsDirty=false;fillBudgets();budgetButtons();if(data)drawChart();$('budget-status').textContent='Changes canceled. Saved thresholds are unchanged.';});
 
@@ -323,6 +324,8 @@ marketDialog.addEventListener('close',()=>{
 });
 
 function renderWatches(){
+  if(hostedDashboard||data.readOnly){upcomingGames=data.upcoming?.games||[];upcomingFetchedAt=data.upcoming?.fetchedAt;upcomingLoaded=true;}
+  renderUpcoming();if(!upcomingLoaded&&!hostedDashboard&&!data.readOnly)loadUpcoming();
   const games=data.games||[], picker=$('game-picker'), prior=activeGameId;
   picker.replaceChildren();
   for(const status of ['watching','paused','finished']){
@@ -398,3 +401,47 @@ $('save-defaults').addEventListener('click',async()=>{
   try{const response=await fetch('/api/defaults',{method:'POST',headers:postHeaders(),body:'{}'});const result=await response.json();if(!response.ok)throw Error(result.error);$('budget-status').textContent='Saved as defaults for future watches. Existing game caps are unchanged.';}
   catch(error){$('budget-status').textContent=error.message;}
 });
+
+function renderUpcoming(){
+  const readOnly=hostedDashboard||data?.readOnly;
+  $('upcoming-help').textContent=readOnly?'Chase Center · All times Pacific. The owner chooses which games to watch.':'Chase Center · All times Pacific. Pick a game to start its own watch.';
+  $('browse-games').hidden=readOnly;$('refresh-schedule').hidden=readOnly;
+  $('browse-games').disabled=savingBudgets||budgetsDirty||!!addingUpcoming;
+  $('refresh-schedule').disabled=upcomingBusy||!!addingUpcoming;
+  const filter=$('upcoming-search').value.trim().toLowerCase();
+  const today=new Date().toLocaleDateString('en-CA',{timeZone:'America/Los_Angeles'});
+  const games=upcomingGames.filter(game=>(game.tipoff?new Date(game.tipoff).getTime()>Date.now():game.eventDate>=today)&&game.title.toLowerCase().includes(filter));
+  $('upcoming-count').textContent=upcomingGames.length?`(${games.length})`:'';
+  $('upcoming-list').replaceChildren();
+  $('upcoming-status').textContent=upcomingBusy?'Loading the Warriors home schedule…':addingUpcoming?'Verifying the selected game and starting its watch…':upcomingError||(!upcomingLoaded?'Loading upcoming home games…':!upcomingGames.length?'No schedule has been shared yet.':!games.length?'No upcoming games match this filter.':`Schedule checked ${new Date(upcomingFetchedAt).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZone:'America/Los_Angeles'})} Pacific · ${readOnly?'Watch controls are available on the private owner dashboard.':'Tipoff is rechecked when you add a watch.'}`);
+  for(const game of games){
+    const card=el('article',undefined,'upcoming-game');card.dataset.upcomingId=game.id;
+    const date=new Date(game.eventDate+'T12:00:00Z').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',timeZone:'America/Los_Angeles'});
+    const info=el('div');info.append(el('strong',game.title),el('small',date+' · '+(game.tipoff?time(game.tipoff)+' Pacific':'Time TBD')));card.append(info);
+    const existing=data?.games?.find(watch=>watch.id===game.id);
+    if(!readOnly||existing){
+      const button=el('button',addingUpcoming===game.id?'Adding…':existing?'Open watch':'Watch game');button.type='button';button.disabled=savingBudgets||budgetsDirty||!!addingUpcoming||requestingCheck;
+      if(existing)button.title=existing.enabled?'Already watching this game':'This watch is paused';
+      button.addEventListener('click',()=>existing?switchGame(game.id):watchUpcoming(game));card.append(button);
+    }else{const link=el('a','View on Gametime ↗');link.href=game.url;link.target='_blank';link.rel='noopener noreferrer';card.append(link);}
+    $('upcoming-list').append(card);
+  }
+}
+async function loadUpcoming(force=false){
+  if(upcomingBusy||hostedDashboard||data?.readOnly)return;
+  upcomingBusy=true;upcomingLoaded=true;upcomingError='';renderUpcoming();
+  try{const response=await fetch('/api/upcoming'+(force?'?refresh=1':''),{cache:'no-store'});if(!response.ok)throw Error('Could not load the schedule. Use Add game to paste a link or retry later.');const result=await response.json();upcomingGames=result.games||[];upcomingFetchedAt=result.fetchedAt;upcomingError=result.error||'';}
+  catch(error){upcomingError=error.message;}
+  finally{upcomingBusy=false;renderUpcoming();}
+}
+async function watchUpcoming(game){
+  if(hostedDashboard||data?.readOnly||savingBudgets||budgetsDirty||addingUpcoming||requestingCheck)return;
+  addingUpcoming=game.id;upcomingError='';renderUpcoming();
+  try{const response=await fetch('/api/watches',{method:'POST',headers:postHeaders(),body:JSON.stringify({url:game.url})});const result=await response.json();if(!response.ok)throw Error(result.error||'Could not start this watch.');addingUpcoming=null;switchGame(result.gameId);}
+  catch(error){upcomingError=error.message;}
+  finally{addingUpcoming=null;renderUpcoming();}
+}
+$('upcoming-search').addEventListener('input',renderUpcoming);
+$('refresh-schedule').addEventListener('click',()=>loadUpcoming(true));
+$('browse-games').addEventListener('click',()=>{$('upcoming-panel').open=true;$('upcoming-panel').scrollIntoView({behavior:'smooth',block:'start'});$('upcoming-search').focus();if(!upcomingLoaded)loadUpcoming();});
+setInterval(()=>{if(!document.hidden&&!hostedDashboard&&data&&!data.readOnly)loadUpcoming();},900000);
